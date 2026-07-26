@@ -131,17 +131,39 @@ const EMPTY_ITEM_FORM: ItemFormData = {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
+function getCurrencySymbol(currency: string): string {
+  switch (currency) {
+    case 'INR':
+      return '₹';
+    case 'USD':
+    case 'CAD':
+    case 'AUD':
+      return '$';
+    case 'EUR':
+      return '€';
+    case 'GBP':
+      return '£';
+    case 'JPY':
+    case 'CNY':
+      return '¥';
+    default:
+      return '$';
+  }
+}
+
 function formatPrice(price: number | null, currency: string) {
   if (price == null) return null;
   try {
-    return new Intl.NumberFormat('en-US', {
+    const locale = currency === 'INR' ? 'en-IN' : 'en-US';
+    return new Intl.NumberFormat(locale, {
       style: 'currency',
-      currency,
+      currency: currency || 'USD',
       minimumFractionDigits: 0,
       maximumFractionDigits: 2,
     }).format(price);
   } catch {
-    return `${currency} ${price}`;
+    const symbol = getCurrencySymbol(currency);
+    return `${symbol}${price}`;
   }
 }
 
@@ -559,7 +581,7 @@ export function WishlistDetailView() {
             <div className="grid grid-cols-3 gap-3">
               <div className="col-span-2 grid gap-2">
                 <Label htmlFor="item-price" className="flex items-center gap-1.5">
-                  <span className="font-semibold">$</span>
+                  <span className="font-semibold">{getCurrencySymbol(itemForm.currency)}</span>
                   Price
                 </Label>
                 <Input
@@ -582,13 +604,14 @@ export function WishlistDetailView() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="USD">USD</SelectItem>
-                    <SelectItem value="EUR">EUR</SelectItem>
-                    <SelectItem value="GBP">GBP</SelectItem>
-                    <SelectItem value="CAD">CAD</SelectItem>
-                    <SelectItem value="AUD">AUD</SelectItem>
-                    <SelectItem value="JPY">JPY</SelectItem>
-                    <SelectItem value="CNY">CNY</SelectItem>
+                    <SelectItem value="INR">INR (₹)</SelectItem>
+                    <SelectItem value="USD">USD ($)</SelectItem>
+                    <SelectItem value="EUR">EUR (€)</SelectItem>
+                    <SelectItem value="GBP">GBP (£)</SelectItem>
+                    <SelectItem value="CAD">CAD ($)</SelectItem>
+                    <SelectItem value="AUD">AUD ($)</SelectItem>
+                    <SelectItem value="JPY">JPY (¥)</SelectItem>
+                    <SelectItem value="CNY">CNY (¥)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
