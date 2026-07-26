@@ -530,7 +530,14 @@ export function MyWishlistsView() {
     setLoading(true);
     try {
       const data = await apiGet('/api/wishlists');
-      const list: Wishlist[] = Array.isArray(data) ? data : data?.wishlists ?? [];
+      const raw: Wishlist[] = Array.isArray(data) ? data : data?.wishlists ?? [];
+      // Map _count.items → itemCount
+      const list: Wishlist[] = raw.map((wl) => ({
+        ...wl,
+        itemCount: (wl as Record<string, unknown>)._count
+          ? ((wl as Record<string, unknown>)._count as Record<string, number>).items
+          : wl.itemCount ?? 0,
+      }));
       setWishlists(list);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to load wishlists';

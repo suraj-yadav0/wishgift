@@ -1,7 +1,6 @@
 'use client';
 
 import { type ReactNode } from 'react';
-import Link from 'next/link';
 import { useSession, signOut } from 'next-auth/react';
 import { useAppStore } from '@/store/use-app-store';
 import { Button } from '@/components/ui/button';
@@ -78,6 +77,33 @@ function NavLinks({ onItemClick }: { onItemClick?: () => void }) {
   );
 }
 
+function DesktopNav() {
+  const currentView = useAppStore((s) => s.currentView);
+  const navigate = useAppStore((s) => s.navigate);
+
+  return (
+    <div className="hidden md:flex items-center gap-1">
+      {navItems.map((item) => {
+        const isActive = currentView === item.view;
+        return (
+          <button
+            key={item.view}
+            onClick={() => navigate(item.view)}
+            className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+              isActive
+                ? 'bg-accent text-accent-foreground'
+                : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
+            }`}
+          >
+            {item.icon}
+            {item.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 export function AppShell({ children }: { children: ReactNode }) {
   const { data: session } = useSession();
   const user = session?.user as Record<string, unknown> | undefined;
@@ -100,25 +126,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </button>
 
           {/* Desktop Nav */}
-          <div className="hidden md:flex items-center gap-1">
-            {navItems.map((item) => {
-              const isActive = useAppStore.getState().currentView === item.view;
-              return (
-                <button
-                  key={item.view}
-                  onClick={() => navigate(item.view)}
-                  className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                    isActive
-                      ? 'bg-accent text-accent-foreground'
-                      : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
-                  }`}
-                >
-                  {item.icon}
-                  {item.label}
-                </button>
-              );
-            })}
-          </div>
+          <DesktopNav />
 
           {/* Right side */}
           <div className="flex items-center gap-3">
