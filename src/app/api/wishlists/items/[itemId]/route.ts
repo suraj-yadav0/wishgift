@@ -11,6 +11,7 @@ const updateItemSchema = z.object({
   productUrl: z.string().nullable().optional(),
   priority: z.number().int().optional(),
   quantity: z.number().int().positive().optional(),
+  isPurchased: z.boolean().optional(),
 });
 
 // GET item and verify ownership helper

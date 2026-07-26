@@ -11,6 +11,7 @@ const createItemSchema = z.object({
   productUrl: z.string().nullable().optional(),
   priority: z.number().int().optional(),
   quantity: z.number().int().positive().optional(),
+  isPurchased: z.boolean().optional(),
 });
 
 // GET /api/wishlists/[id]/items - Get all items for a wishlist

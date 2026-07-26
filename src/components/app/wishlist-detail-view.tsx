@@ -20,6 +20,7 @@ import {
   Loader2,
   Globe,
   Lock,
+  CheckCircle2,
 } from 'lucide-react';
 
 import { apiGet, apiPost, apiPut, apiDelete } from '@/lib/api';
@@ -79,6 +80,7 @@ interface WishlistItem {
   productUrl: string | null;
   priority: number;
   quantity: number;
+  isPurchased?: boolean;
   wishlistId: string;
   createdAt: string;
   updatedAt: string;
@@ -211,6 +213,7 @@ export function WishlistDetailView() {
 
   // Heart animation state
   const [heartAnimations, setHeartAnimations] = useState<Record<string, boolean>>({});
+  const [filterStatus, setFilterStatus] = useState<'all' | 'available' | 'purchased'>('all');
 
   const isOwner = user && wishlist ? user.id === wishlist.userId : false;
 
@@ -364,9 +367,36 @@ export function WishlistDetailView() {
     try {
       await apiPost('/api/gifts/unreserve', { wishlistItemId: item.id });
       toast({ title: 'Unreserved', description: `"${item.title}" is now available again.` });
-      triggerRefresh();
     } catch (err: any) {
-      toast({ title: 'Error', description: err.message || 'Failed to unreserve', variant: 'destructive' });
+      toast({
+        title: 'Error',
+        description: err.message || 'Failed to unreserve item',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleTogglePurchased = async (item: WishlistItem) => {
+    try {
+      const nextPurchasedState = !item.isPurchased;
+      await apiPut(`/api/wishlists/items/${item.id}`, { isPurchased: nextPurchasedState });
+      setWishlist((prev) => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          items: prev.items.map((i) => (i.id === item.id ? { ...i, isPurchased: nextPurchasedState } : i)),
+        };
+      });
+      toast({
+        title: nextPurchasedState ? 'Marked as Purchased 🎉' : 'Marked as Available',
+        description: `"${item.title}" status has been updated.`,
+      });
+    } catch {
+      toast({
+        title: 'Error',
+        description: 'Failed to update item status',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -497,28 +527,64 @@ export function WishlistDetailView() {
             {wishlist.items.length === 0 ? (
               <EmptyState isOwner={isOwner} onAddItem={openCreateItem} />
             ) : (
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-                <AnimatePresence mode="popLayout">
-                  {wishlist.items.map((item, index) => (
-                    <motion.div
-                      key={item.id}
-                      initial={{ opacity: 0, y: 16 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.95 }}
-                      transition={{ duration: 0.3, delay: index * 0.05 }}
+              <div>
+                {/* Filter Tabs */}
+                <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button
+                      variant={filterStatus === 'all' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setFilterStatus('all')}
                     >
-                      <ItemCard
-                        item={item}
-                        isOwner={isOwner}
-                        onEdit={openEditItem}
-                        onDelete={openDeleteItem}
-                        onReserve={openReserveDialog}
-                        onUnreserve={handleUnreserve}
-                        heartAnimating={!!heartAnimations[item.id]}
-                      />
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
+                      All ({wishlist.items.length})
+                    </Button>
+                    <Button
+                      variant={filterStatus === 'available' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setFilterStatus('available')}
+                    >
+                      Available ({wishlist.items.filter((i) => !i.isPurchased).length})
+                    </Button>
+                    <Button
+                      variant={filterStatus === 'purchased' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setFilterStatus('purchased')}
+                    >
+                      Purchased / Done ({wishlist.items.filter((i) => i.isPurchased).length})
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+                  <AnimatePresence mode="popLayout">
+                    {wishlist.items
+                      .filter((item) => {
+                        if (filterStatus === 'available') return !item.isPurchased;
+                        if (filterStatus === 'purchased') return !!item.isPurchased;
+                        return true;
+                      })
+                      .map((item, index) => (
+                        <motion.div
+                          key={item.id}
+                          initial={{ opacity: 0, y: 16 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, scale: 0.95 }}
+                          transition={{ duration: 0.3, delay: index * 0.05 }}
+                        >
+                          <ItemCard
+                            item={item}
+                            isOwner={isOwner}
+                            onEdit={openEditItem}
+                            onDelete={openDeleteItem}
+                            onTogglePurchased={handleTogglePurchased}
+                            onReserve={openReserveDialog}
+                            onUnreserve={handleUnreserve}
+                            heartAnimating={!!heartAnimations[item.id]}
+                          />
+                        </motion.div>
+                      ))}
+                  </AnimatePresence>
+                </div>
               </div>
             )}
           </>
@@ -836,6 +902,7 @@ function ItemCard({
   isOwner,
   onEdit,
   onDelete,
+  onTogglePurchased,
   onReserve,
   onUnreserve,
   heartAnimating,
@@ -844,6 +911,7 @@ function ItemCard({
   isOwner: boolean;
   onEdit: (item: WishlistItem) => void;
   onDelete: (item: WishlistItem) => void;
+  onTogglePurchased: (item: WishlistItem) => void;
   onReserve: (item: WishlistItem) => void;
   onUnreserve: (item: WishlistItem) => void;
   heartAnimating: boolean;
@@ -878,17 +946,23 @@ function ItemCard({
           </div>
         )}
 
-        {/* Priority badge */}
-        {pConfig && (
-          <div className={`absolute left-2 top-2`}>
+        {/* Priority badge & Purchased badge */}
+        <div className="absolute left-2 top-2 flex flex-wrap gap-1.5 z-10">
+          {pConfig && (
             <Badge
               variant="secondary"
               className={`${pConfig.bg} ${pConfig.color} border ${pConfig.border} text-xs font-semibold`}
             >
               {pConfig.label}
             </Badge>
-          </div>
-        )}
+          )}
+          {item.isPurchased && (
+            <Badge className="gap-1 bg-emerald-600 text-white shadow-sm hover:bg-emerald-700">
+              <CheckCircle2 className="h-3 w-3" />
+              Purchased / Done
+            </Badge>
+          )}
+        </div>
 
         {/* Owner dropdown menu */}
         {isOwner && (
@@ -919,6 +993,15 @@ function ItemCard({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                {isOwner && (
+                  <DropdownMenuItem
+                    onClick={() => onTogglePurchased(item)}
+                    className="gap-2 text-emerald-600 focus:text-emerald-600 dark:text-emerald-400 dark:focus:text-emerald-400 font-medium"
+                  >
+                    <CheckCircle2 className="h-4 w-4" />
+                    {item.isPurchased ? 'Mark as Available' : 'Mark as Purchased / Done'}
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem onClick={() => onEdit(item)} className="gap-2">
                   <Pencil className="h-4 w-4" />
                   Edit
@@ -1000,71 +1083,83 @@ function ItemCard({
 
         <Separator />
 
-        {/* Reservation Status */}
+        {/* Reservation / Purchased Status */}
         <div className="flex flex-wrap items-center gap-2">
-          {/* Owner sees reservation info */}
-          {isOwner && (
+          {item.isPurchased ? (
+            <Badge
+              variant="secondary"
+              className="gap-1 bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-medium"
+            >
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              Gifted / Purchased
+            </Badge>
+          ) : (
             <>
-              {item.reservationCount > 0 && (
-                <Badge
-                  variant="secondary"
-                  className="gap-1 bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
-                >
-                  <Users className="h-3 w-3" />
-                  {item.reservationCount} {item.reservationCount === 1 ? 'gifter' : 'gifters'}
-                </Badge>
-              )}
-              {isFullyReserved && (
-                <Badge
-                  variant="secondary"
-                  className="bg-rose-50 text-rose-700 dark:bg-rose-950 dark:text-rose-300"
-                >
-                  Fully reserved
-                </Badge>
-              )}
-            </>
-          )}
-
-          {/* Non-owner sees reservation controls */}
-          {!isOwner && (
-            <>
-              {isReservedByMe && (
+              {/* Owner sees reservation info */}
+              {isOwner && (
                 <>
-                  <Badge
-                    variant="secondary"
-                    className="gap-1 bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300"
-                  >
-                    <Heart className="h-3 w-3" />
-                    Reserved by You
-                  </Badge>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onUnreserve(item)}
-                    className="text-xs"
-                  >
-                    Unreserve
-                  </Button>
+                  {item.reservationCount > 0 && (
+                    <Badge
+                      variant="secondary"
+                      className="gap-1 bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
+                    >
+                      <Users className="h-3 w-3" />
+                      {item.reservationCount} {item.reservationCount === 1 ? 'gifter' : 'gifters'}
+                    </Badge>
+                  )}
+                  {isFullyReserved && (
+                    <Badge
+                      variant="secondary"
+                      className="bg-rose-50 text-rose-700 dark:bg-rose-950 dark:text-rose-300"
+                    >
+                      Fully reserved
+                    </Badge>
+                  )}
                 </>
               )}
-              {isReservedByOther && !isReservedByMe && (
-                <Badge
-                  variant="secondary"
-                  className="gap-1 bg-muted text-muted-foreground"
-                >
-                  Reserved
-                </Badge>
-              )}
-              {!isReserved && (
-                <Button
-                  size="sm"
-                  onClick={() => onReserve(item)}
-                  disabled={isFullyReserved}
-                  className="gap-1.5 bg-gradient-to-r from-rose-500 to-orange-500 text-white hover:from-rose-600 hover:to-orange-600"
-                >
-                  <Gift className="h-4 w-4" />
-                  Gift This
-                </Button>
+
+              {/* Non-owner sees reservation controls */}
+              {!isOwner && (
+                <>
+                  {isReservedByMe && (
+                    <>
+                      <Badge
+                        variant="secondary"
+                        className="gap-1 bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300"
+                      >
+                        <Heart className="h-3 w-3" />
+                        Reserved by You
+                      </Badge>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onUnreserve(item)}
+                        className="text-xs"
+                      >
+                        Unreserve
+                      </Button>
+                    </>
+                  )}
+                  {isReservedByOther && !isReservedByMe && (
+                    <Badge
+                      variant="secondary"
+                      className="gap-1 bg-muted text-muted-foreground"
+                    >
+                      Reserved
+                    </Badge>
+                  )}
+                  {!isReserved && (
+                    <Button
+                      size="sm"
+                      onClick={() => onReserve(item)}
+                      disabled={isFullyReserved}
+                      className="gap-1.5 bg-gradient-to-r from-rose-500 to-orange-500 text-white hover:from-rose-600 hover:to-orange-600"
+                    >
+                      <Gift className="h-4 w-4" />
+                      Gift This
+                    </Button>
+                  )}
+                </>
               )}
             </>
           )}
