@@ -4,10 +4,10 @@ import { z } from 'zod';
 
 const createWishlistSchema = z.object({
   name: z.string().min(1, 'Name is required'),
-  description: z.string().optional(),
-  coverImage: z.string().optional(),
+  description: z.string().nullable().optional(),
+  coverImage: z.string().nullable().optional(),
   isPublic: z.boolean().optional(),
-  occasion: z.string().optional(),
+  occasion: z.string().nullable().optional(),
 });
 
 // GET /api/wishlists - Get all wishlists for authenticated user (or another user's public wishlists)

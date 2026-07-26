@@ -4,11 +4,11 @@ import { z } from 'zod';
 
 const updateItemSchema = z.object({
   title: z.string().min(1).optional(),
-  description: z.string().optional(),
-  imageUrl: z.string().optional(),
+  description: z.string().nullable().optional(),
+  imageUrl: z.string().nullable().optional(),
   price: z.number().positive().optional().nullable(),
   currency: z.string().optional(),
-  productUrl: z.string().optional(),
+  productUrl: z.string().nullable().optional(),
   priority: z.number().int().optional(),
   quantity: z.number().int().positive().optional(),
 });

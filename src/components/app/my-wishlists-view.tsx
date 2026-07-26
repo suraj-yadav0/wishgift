@@ -159,8 +159,8 @@ function WishlistFormDialog({
     try {
       const payload = {
         name: values.name.trim(),
-        description: values.description.trim() || null,
-        occasion: values.occasion.trim() || null,
+        description: values.description.trim() || undefined,
+        occasion: values.occasion.trim() || undefined,
         isPublic: values.isPublic,
       };
 

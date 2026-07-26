@@ -9,7 +9,14 @@ export async function apiFetch(path: string, options: RequestInit = {}) {
   const res = await fetch(path, { ...options, headers });
   if (!res.ok) {
     const data = await res.json().catch(() => ({ error: 'Request failed' }));
-    throw new Error(data.error || 'Request failed');
+    let errorMsg = 'Request failed';
+    if (typeof data.error === 'string') {
+      errorMsg = data.error;
+    } else if (data.error && typeof data.error === 'object') {
+      const messages = Object.values(data.error).flat();
+      errorMsg = messages.length > 0 ? messages.join(', ') : JSON.stringify(data.error);
+    }
+    throw new Error(errorMsg);
   }
   return res.json();
 }
