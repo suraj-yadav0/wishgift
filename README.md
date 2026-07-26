@@ -137,6 +137,43 @@ wishgift/
 
 ---
 
+## 🌐 Deployment
+
+### Option 1: Deploying to Vercel (Recommended for Next.js)
+
+1. Push your repository to GitHub / GitLab / Bitbucket.
+2. Sign up or log in to [Vercel](https://vercel.com).
+3. Click **"Add New Project"** and import your repository.
+4. Add the following **Environment Variables** in the Vercel project settings:
+   - `NEXTAUTH_SECRET`: A long random string (e.g. generate via `openssl rand -base64 32`).
+   - `NEXTAUTH_URL`: Your production URL (e.g. `https://your-app-name.vercel.app`).
+   - `DATABASE_URL`: Hosted database connection URL (e.g., [Turso](https://turso.tech/) for SQLite over HTTP, or [Neon](https://neon.tech/) / [Supabase](https://supabase.com/) if using PostgreSQL).
+5. Click **Deploy**. Vercel will build and host your app with free SSL automatically!
+
+---
+
+### Option 2: Deploying to Render / Railway / Fly.io (Supports SQLite out of the box)
+
+If you prefer keeping SQLite without a remote database provider:
+
+1. Create a new **Web Service** on [Render](https://render.com) or [Railway](https://railway.app).
+2. Connect your GitHub repository.
+3. Set the **Build Command**:
+   ```bash
+   npm install && npm run db:generate && npm run db:push && npm run build
+   ```
+4. Set the **Start Command**:
+   ```bash
+   npm run start
+   ```
+5. Attach a **Persistent Disk** mounted at `/app/db` (or `/db`) so SQLite database data persists across redeployments.
+6. Set Environment Variables:
+   - `DATABASE_URL="file:../db/custom.db"`
+   - `NEXTAUTH_SECRET="your-generated-secret-key"`
+   - `NEXTAUTH_URL="https://your-render-app-name.onrender.com"`
+
+---
+
 ## 🤝 Troubleshooting
 
 - **Error: Could not find a production build in the '.next' directory**
@@ -144,3 +181,4 @@ wishgift/
 
 - **Database Connection Issues / Prisma Errors**
   - **Solution**: Run `npm run db:generate` followed by `npm run db:push` to ensure Prisma client and database file are up to date.
+
