@@ -1,7 +1,5 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
-# dependencies
-node_modules
+# Dependencies
+node_modules/
 /.pnp
 .pnp.*
 .yarn/*
@@ -10,45 +8,65 @@ node_modules
 !.yarn/releases
 !.yarn/versions
 
-# testing
-/coverage
-
-# next.js
+# Next.js Build & Outputs
 /.next/
 /out/
+/build/
+/dist/
+/.vercel
+*.tsbuildinfo
+next-env.d.ts
 
-# production
-/build
+# SQLite & Local Databases
+*.db
+*.db-journal
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+/db/*.db
+/db/*.sqlite
 
-# misc
-.DS_Store
-*.pem
+# Environment Files
+.env
+.env*.local
+.env.development
+.env.test
+.env.production
+!.env.example
 
-# debug
+# Testing & Coverage
+/coverage
+
+# Logs & Debugging
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
-
-# env files (can opt-in for committing if needed)
-.env*
-
-# vercel
-.vercel
-
-
-# typescript
-*.tsbuildinfo
-next-env.d.ts
-local-*
-.claude
-.z-ai-config
-*.log
 dev.log
 dev.out.log
-test
-prompt
-
 server.log
-# Skills directory
+
+# IDEs, Editors & OS Files
+.DS_Store
+.DS_Store?
+*.pem
+Thumbs.db
+ehthumbs.db
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+.idea/
+*.swp
+*.swo
+
+# Project & Tool Specific
+local-*
+.claude/
+.z-ai-config
 /skills/
+prompt
+test
