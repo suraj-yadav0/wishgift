@@ -215,6 +215,16 @@ export function WishlistDetailView() {
   const [heartAnimations, setHeartAnimations] = useState<Record<string, boolean>>({});
   const [filterStatus, setFilterStatus] = useState<'all' | 'available' | 'purchased'>('all');
 
+  // Edit Wishlist dialog state
+  const [editWishlistOpen, setEditWishlistOpen] = useState(false);
+  const [editWishlistSubmitting, setEditWishlistSubmitting] = useState(false);
+  const [editWishlistForm, setEditWishlistForm] = useState({
+    name: '',
+    description: '',
+    occasion: '',
+    isPublic: true,
+  });
+
   const isOwner = user && wishlist ? user.id === wishlist.userId : false;
 
   // ── Fetch wishlist ──
@@ -266,6 +276,47 @@ export function WishlistDetailView() {
         title: 'Wishlist Link',
         description: shareUrl,
       });
+    }
+  };
+
+  // ── Edit Wishlist ──
+  const openEditWishlist = () => {
+    if (!wishlist) return;
+    setEditWishlistForm({
+      name: wishlist.name,
+      description: wishlist.description || '',
+      occasion: wishlist.occasion || '',
+      isPublic: wishlist.isPublic,
+    });
+    setEditWishlistOpen(true);
+  };
+
+  const handleUpdateWishlist = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!wishlist || !editWishlistForm.name.trim()) return;
+    setEditWishlistSubmitting(true);
+    try {
+      const payload = {
+        name: editWishlistForm.name.trim(),
+        description: editWishlistForm.description.trim() || undefined,
+        occasion: editWishlistForm.occasion.trim() || undefined,
+        isPublic: editWishlistForm.isPublic,
+      };
+      const updated = await apiPut(`/api/wishlists/${wishlist.id}`, payload);
+      setWishlist((prev) => (prev ? { ...prev, ...updated } : null));
+      toast({
+        title: 'Wishlist updated! ✨',
+        description: `"${payload.name}" changes saved.`,
+      });
+      setEditWishlistOpen(false);
+    } catch (err: any) {
+      toast({
+        title: 'Could not update wishlist',
+        description: err.message || 'Something went wrong',
+        variant: 'destructive',
+      });
+    } finally {
+      setEditWishlistSubmitting(false);
     }
   };
 
@@ -517,20 +568,7 @@ export function WishlistDetailView() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => {
-                          setItemDialogMode('edit');
-                          setEditingItem(null);
-                          setItemForm({
-                            title: wishlist.name,
-                            description: wishlist.description || '',
-                            imageUrl: '',
-                            price: '',
-                            currency: 'USD',
-                            productUrl: '',
-                            quantity: '1',
-                            priority: '2',
-                          });
-                        }}
+                        onClick={openEditWishlist}
                         className="gap-1.5"
                       >
                         <Pencil className="h-4 w-4" />
@@ -910,6 +948,80 @@ export function WishlistDetailView() {
               Reserve Gift
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Edit Wishlist Dialog ── */}
+      <Dialog open={editWishlistOpen} onOpenChange={setEditWishlistOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Wishlist Details</DialogTitle>
+            <DialogDescription>
+              Update the name, description, occasion, or visibility of your wishlist.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleUpdateWishlist} className="space-y-4 py-2">
+            <div className="grid gap-2">
+              <Label htmlFor="edit-wl-name">
+                Name <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="edit-wl-name"
+                value={editWishlistForm.name}
+                onChange={(e) => setEditWishlistForm((f) => ({ ...f, name: e.target.value }))}
+                placeholder="e.g. Birthday 2026"
+                required
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit-wl-desc">Description</Label>
+              <Textarea
+                id="edit-wl-desc"
+                value={editWishlistForm.description}
+                onChange={(e) => setEditWishlistForm((f) => ({ ...f, description: e.target.value }))}
+                placeholder="A few words about this wishlist..."
+                rows={3}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit-wl-occasion">Occasion</Label>
+              <Input
+                id="edit-wl-occasion"
+                value={editWishlistForm.occasion}
+                onChange={(e) => setEditWishlistForm((f) => ({ ...f, occasion: e.target.value }))}
+                placeholder="e.g. Birthday, Wedding, Christmas"
+              />
+            </div>
+            <div className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
+              <div className="space-y-0.5">
+                <Label htmlFor="edit-wl-public" className="flex items-center gap-1.5 cursor-pointer font-medium">
+                  <Globe className="h-4 w-4 text-rose-500" />
+                  Public Wishlist
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Anyone with the link can view this wishlist.
+                </p>
+              </div>
+              <Switch
+                id="edit-wl-public"
+                checked={editWishlistForm.isPublic}
+                onCheckedChange={(checked) => setEditWishlistForm((f) => ({ ...f, isPublic: checked }))}
+              />
+            </div>
+            <DialogFooter className="gap-2 sm:gap-0">
+              <Button type="button" variant="outline" onClick={() => setEditWishlistOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={editWishlistSubmitting || !editWishlistForm.name.trim()}
+                className="bg-gradient-to-r from-rose-500 to-orange-500 text-white hover:from-rose-600 hover:to-orange-600"
+              >
+                {editWishlistSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Save Changes
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </div>
