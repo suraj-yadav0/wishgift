@@ -14,6 +14,7 @@ import {
   Package,
   Sparkles,
   Loader2,
+  Share2,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -373,6 +374,7 @@ interface WishlistCardProps {
 }
 
 function WishlistCard({ wishlist, onOpen, onEdit, onDelete }: WishlistCardProps) {
+  const { toast } = useToast();
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
@@ -434,6 +436,31 @@ function WishlistCard({ wishlist, onOpen, onEdit, onDelete }: WishlistCardProps)
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start">
+                <DropdownMenuItem
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    const shareUrl = `${window.location.origin}/?wishlistId=${wishlist.id}`;
+                    if (navigator.share) {
+                      try {
+                        await navigator.share({
+                          title: wishlist.name,
+                          text: `Check out my wishlist "${wishlist.name}" on WishGift!`,
+                          url: shareUrl,
+                        });
+                        return;
+                      } catch {}
+                    }
+                    try {
+                      await navigator.clipboard.writeText(shareUrl);
+                      toast({ title: 'Link copied! 📋', description: 'Wishlist link copied to clipboard.' });
+                    } catch {
+                      toast({ title: 'Wishlist Link', description: shareUrl });
+                    }
+                  }}
+                >
+                  <Share2 className="mr-2 h-4 w-4 text-rose-500" />
+                  Share Link
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => onEdit(wishlist)}>
                   <Pencil className="mr-2 h-4 w-4" />
                   Edit

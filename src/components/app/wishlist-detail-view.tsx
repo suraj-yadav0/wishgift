@@ -239,12 +239,33 @@ export function WishlistDetailView() {
   // ── Share ──
   const handleShare = async () => {
     if (!wishlist) return;
-    const message = `Check out my wishlist: "${wishlist.name}" on WishGift!`;
+    const shareUrl = `${window.location.origin}/?wishlistId=${wishlist.id}`;
+    const shareData = {
+      title: wishlist.name,
+      text: `Check out my wishlist "${wishlist.name}" on WishGift!`,
+      url: shareUrl,
+    };
+
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share(shareData);
+        return;
+      } catch {
+        // Fallback to clipboard if share sheet closed/dismissed
+      }
+    }
+
     try {
-      await navigator.clipboard.writeText(message);
-      toast({ title: 'Copied to clipboard!', description: 'Share message copied.' });
+      await navigator.clipboard.writeText(shareUrl);
+      toast({
+        title: 'Link copied to clipboard! 📋',
+        description: 'Direct wishlist link has been copied.',
+      });
     } catch {
-      toast({ title: 'Share', description: message });
+      toast({
+        title: 'Wishlist Link',
+        description: shareUrl,
+      });
     }
   };
 

@@ -8,8 +8,21 @@ export function useSessionSync() {
   const setAuth = useAppStore((s) => s.setAuth);
   const navigate = useAppStore((s) => s.navigate);
   const currentView = useAppStore((s) => s.currentView);
+  const setSelectedWishlistId = useAppStore((s) => s.setSelectedWishlistId);
 
   useEffect(() => {
+    // Check for shared URL params (e.g. ?wishlistId=...)
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const sharedWishlistId = params.get('wishlistId');
+      if (sharedWishlistId) {
+        setSelectedWishlistId(sharedWishlistId);
+        if (currentView !== 'wishlist-detail') {
+          navigate('wishlist-detail');
+        }
+      }
+    }
+
     if (status === 'authenticated' && session?.user) {
       const user = session.user as Record<string, unknown>;
       const userData = {
@@ -21,17 +34,25 @@ export function useSessionSync() {
       };
       setAuth(userData);
       localStorage.setItem('userId', userData.id);
-      if (currentView === 'landing') {
+      
+      const params = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+      const sharedWishlistId = params?.get('wishlistId');
+      
+      if (!sharedWishlistId && currentView === 'landing') {
         navigate('my-wishlists');
       }
     } else if (status === 'unauthenticated') {
       setAuth(null);
       localStorage.removeItem('userId');
-      if (currentView !== 'landing') {
+      
+      const params = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+      const sharedWishlistId = params?.get('wishlistId');
+      
+      if (!sharedWishlistId && currentView !== 'landing') {
         navigate('landing');
       }
     }
-  }, [session, status, setAuth, navigate, currentView]);
+  }, [session, status, setAuth, navigate, currentView, setSelectedWishlistId]);
 
   return { session, status };
 }
