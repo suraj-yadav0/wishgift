@@ -225,6 +225,10 @@ export function WishlistDetailView() {
     isPublic: true,
   });
 
+  // Item Detailed View modal state
+  const [detailItem, setDetailItem] = useState<WishlistItem | null>(null);
+  const [detailItemOpen, setDetailItemOpen] = useState(false);
+
   const isOwner = user && wishlist ? user.id === wishlist.userId : false;
 
   // ── Fetch wishlist ──
@@ -277,6 +281,12 @@ export function WishlistDetailView() {
         description: shareUrl,
       });
     }
+  };
+
+  // ── Detail Item Modal ──
+  const openDetailItem = (item: WishlistItem) => {
+    setDetailItem(item);
+    setDetailItemOpen(true);
   };
 
   // ── Edit Wishlist ──
@@ -633,6 +643,7 @@ export function WishlistDetailView() {
                           <ItemCard
                             item={item}
                             isOwner={isOwner}
+                            onOpenDetail={openDetailItem}
                             onEdit={openEditItem}
                             onDelete={openDeleteItem}
                             onTogglePurchased={handleTogglePurchased}
@@ -1024,6 +1035,203 @@ export function WishlistDetailView() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* ── Detailed Item View Dialog ── */}
+      <Dialog open={detailItemOpen} onOpenChange={setDetailItemOpen}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl p-0 overflow-hidden">
+          {detailItem && (
+            <div>
+              {/* Full Image Header */}
+              <div className="relative aspect-[16/9] w-full overflow-hidden bg-muted">
+                {detailItem.imageUrl ? (
+                  <img
+                    src={detailItem.imageUrl}
+                    alt={detailItem.title}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-rose-100 via-orange-50 to-amber-100 dark:from-rose-950 dark:via-orange-950 dark:to-amber-950">
+                    <Package className="h-16 w-16 text-rose-400/60" />
+                  </div>
+                )}
+
+                {/* Badges on image */}
+                <div className="absolute left-3 top-3 flex flex-wrap gap-2 z-10">
+                  {priorityConfig(detailItem.priority) && (
+                    <Badge
+                      variant="secondary"
+                      className={`${priorityConfig(detailItem.priority)!.bg} ${priorityConfig(detailItem.priority)!.color} border ${priorityConfig(detailItem.priority)!.border} text-xs font-semibold`}
+                    >
+                      {priorityConfig(detailItem.priority)!.label} Priority
+                    </Badge>
+                  )}
+                  {detailItem.isPurchased && (
+                    <Badge className="gap-1 bg-emerald-600 text-white shadow-sm">
+                      <CheckCircle2 className="h-3.5 w-3.5" />
+                      Purchased / Done
+                    </Badge>
+                  )}
+                </div>
+              </div>
+
+              {/* Details Section */}
+              <div className="p-6 space-y-5">
+                {/* Title & Price Header */}
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <h2 className="text-2xl font-bold tracking-tight text-foreground leading-snug">
+                      {detailItem.title}
+                    </h2>
+                  </div>
+                  {detailItem.price != null && (
+                    <div className="shrink-0">
+                      <span className="text-2xl font-extrabold text-rose-600 dark:text-rose-400">
+                        {formatPrice(detailItem.price, detailItem.currency)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                <Separator />
+
+                {/* Full Description Section */}
+                <div className="space-y-2">
+                  <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Full Description
+                  </h4>
+                  {detailItem.description ? (
+                    <div className="rounded-lg bg-muted/40 p-4 text-sm leading-relaxed whitespace-pre-wrap text-foreground border">
+                      {detailItem.description}
+                    </div>
+                  ) : (
+                    <p className="text-sm italic text-muted-foreground">
+                      No description provided for this item.
+                    </p>
+                  )}
+                </div>
+
+                {/* Additional Item Details */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                  <div className="rounded-lg border p-3.5 space-y-1">
+                    <span className="text-xs text-muted-foreground font-medium">Quantity Requested</span>
+                    <p className="text-base font-semibold">{detailItem.quantity}</p>
+                  </div>
+
+                  {detailItem.productUrl && (
+                    <div className="rounded-lg border p-3.5 space-y-1">
+                      <span className="text-xs text-muted-foreground font-medium font-semibold">Product Link</span>
+                      <div>
+                        <a
+                          href={detailItem.productUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 text-sm font-semibold text-amber-600 hover:text-amber-700 dark:text-amber-400 hover:underline"
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                          View Product Store
+                          <ArrowRight className="h-3.5 w-3.5" />
+                        </a>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <Separator />
+
+                {/* Footer Actions */}
+                <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+                  {isOwner ? (
+                    <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                      <Button
+                        variant="default"
+                        onClick={() => {
+                          const item = detailItem;
+                          setDetailItemOpen(false);
+                          openEditItem(item);
+                        }}
+                        className="gap-2"
+                      >
+                        <Pencil className="h-4 w-4" />
+                        Edit Item
+                      </Button>
+
+                      <Button
+                        variant={detailItem.isPurchased ? 'outline' : 'secondary'}
+                        onClick={async () => {
+                          const item = detailItem;
+                          const nextPurchasedState = !item.isPurchased;
+                          setDetailItem({ ...item, isPurchased: nextPurchasedState });
+                          await handleTogglePurchased(item);
+                        }}
+                        className="gap-2 text-emerald-700 dark:text-emerald-300"
+                      >
+                        <CheckCircle2 className="h-4 w-4" />
+                        {detailItem.isPurchased ? 'Mark as Available' : 'Mark as Purchased'}
+                      </Button>
+
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        onClick={() => {
+                          const item = detailItem;
+                          setDetailItemOpen(false);
+                          openDeleteItem(item);
+                        }}
+                        title="Delete Item"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-3 w-full justify-end">
+                      {detailItem.isPurchased ? (
+                        <Badge variant="secondary" className="gap-1.5 py-1.5 px-3 bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-semibold text-sm">
+                          <CheckCircle2 className="h-4 w-4" />
+                          Already Purchased / Done
+                        </Badge>
+                      ) : detailItem.reservedByCurrentUser ? (
+                        <div className="flex items-center gap-2">
+                          <Badge variant="secondary" className="gap-1 py-1.5 px-3 bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 font-medium">
+                            <Heart className="h-4 w-4 fill-amber-600" />
+                            Reserved by You
+                          </Badge>
+                          <Button
+                            variant="outline"
+                            onClick={() => {
+                              const item = detailItem;
+                              setDetailItemOpen(false);
+                              handleUnreserve(item);
+                            }}
+                          >
+                            Unreserve
+                          </Button>
+                        </div>
+                      ) : (
+                        <Button
+                          onClick={() => {
+                            const item = detailItem;
+                            setDetailItemOpen(false);
+                            openReserveDialog(item);
+                          }}
+                          disabled={detailItem.reservationCount >= detailItem.quantity}
+                          className="gap-2 bg-gradient-to-r from-rose-500 to-orange-500 text-white hover:from-rose-600 hover:to-orange-600 text-base py-5"
+                        >
+                          <Gift className="h-5 w-5" />
+                          Gift This Item
+                        </Button>
+                      )}
+                    </div>
+                  )}
+
+                  <Button variant="ghost" onClick={() => setDetailItemOpen(false)}>
+                    Close
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -1033,6 +1241,7 @@ export function WishlistDetailView() {
 function ItemCard({
   item,
   isOwner,
+  onOpenDetail,
   onEdit,
   onDelete,
   onTogglePurchased,
@@ -1042,6 +1251,7 @@ function ItemCard({
 }: {
   item: WishlistItem;
   isOwner: boolean;
+  onOpenDetail: (item: WishlistItem) => void;
   onEdit: (item: WishlistItem) => void;
   onDelete: (item: WishlistItem) => void;
   onTogglePurchased: (item: WishlistItem) => void;
@@ -1057,13 +1267,14 @@ function ItemCard({
 
   return (
     <Card
-      className={`group relative flex flex-col overflow-hidden transition-all duration-200 hover:shadow-lg ${
+      className={`group relative flex cursor-pointer flex-col overflow-hidden transition-all duration-200 hover:shadow-lg ${
         isFullyReserved
           ? 'border-rose-200 bg-rose-50/30 dark:border-rose-900 dark:bg-rose-950/10'
           : isReservedByMe
           ? 'border-amber-200 bg-amber-50/30 dark:border-amber-900 dark:bg-amber-950/10'
           : ''
       }`}
+      onClick={() => onOpenDetail(item)}
     >
       {/* Image / Placeholder */}
       <div className="relative aspect-[4/3] w-full overflow-hidden">
@@ -1099,7 +1310,7 @@ function ItemCard({
 
         {/* Owner dropdown menu */}
         {isOwner && (
-          <div className="absolute right-2 top-2">
+          <div className="absolute right-2 top-2" onClick={(e) => e.stopPropagation()}>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -1128,19 +1339,31 @@ function ItemCard({
               <DropdownMenuContent align="end">
                 {isOwner && (
                   <DropdownMenuItem
-                    onClick={() => onTogglePurchased(item)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onTogglePurchased(item);
+                    }}
                     className="gap-2 text-emerald-600 focus:text-emerald-600 dark:text-emerald-400 dark:focus:text-emerald-400 font-medium"
                   >
                     <CheckCircle2 className="h-4 w-4" />
                     {item.isPurchased ? 'Mark as Available' : 'Mark as Purchased / Done'}
                   </DropdownMenuItem>
                 )}
-                <DropdownMenuItem onClick={() => onEdit(item)} className="gap-2">
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEdit(item);
+                  }}
+                  className="gap-2"
+                >
                   <Pencil className="h-4 w-4" />
                   Edit
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  onClick={() => onDelete(item)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete(item);
+                  }}
                   className="gap-2 text-red-600 focus:text-red-600 dark:text-red-400 dark:focus:text-red-400"
                 >
                   <Trash2 className="h-4 w-4" />
@@ -1206,6 +1429,7 @@ function ItemCard({
             href={item.productUrl}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
             className="inline-flex items-center gap-1.5 text-sm font-medium text-amber-600 transition-colors hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300"
           >
             <ExternalLink className="h-3.5 w-3.5" />
@@ -1266,7 +1490,10 @@ function ItemCard({
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => onUnreserve(item)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onUnreserve(item);
+                        }}
                         className="text-xs"
                       >
                         Unreserve
@@ -1284,7 +1511,10 @@ function ItemCard({
                   {!isReserved && (
                     <Button
                       size="sm"
-                      onClick={() => onReserve(item)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onReserve(item);
+                      }}
                       disabled={isFullyReserved}
                       className="gap-1.5 bg-gradient-to-r from-rose-500 to-orange-500 text-white hover:from-rose-600 hover:to-orange-600"
                     >
