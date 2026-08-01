@@ -575,11 +575,13 @@ export function MyWishlistsView() {
       setWishlists(list);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to load wishlists';
-      toast({
-        title: 'Could not load your wishlists',
-        description: message,
-        variant: 'destructive',
-      });
+      if (message !== 'Unauthorized') {
+        toast({
+          title: 'Could not load your wishlists',
+          description: message,
+          variant: 'destructive',
+        });
+      }
       setWishlists([]);
     } finally {
       setLoading(false);

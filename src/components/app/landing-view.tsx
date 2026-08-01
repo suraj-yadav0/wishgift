@@ -165,8 +165,7 @@ export function LandingView() {
       });
       signInForm.reset();
       setDialogOpen(false);
-      // Session sync hook will handle navigation to the app.
-      navigate('my-wishlists');
+      // Session sync hook handles hydration and smooth navigation to my-wishlists.
     } catch {
       toast({
         title: 'Something went wrong',
