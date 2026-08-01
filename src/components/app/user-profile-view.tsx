@@ -275,14 +275,18 @@ export function UserProfileView() {
     setLoading(true);
     setError(null);
     try {
-      // Fetch profile first (need userId for wishlists query)
+      // Fetch profile first (need userId and isFollowingByCurrentUser for wishlists query)
       const profileData = await apiGet('/api/users/' + selectedUsername);
       setProfile(profileData);
 
-      // Then fetch public wishlists for this user
-      const wlList = await apiGet('/api/wishlists?userId=' + profileData.id);
-      const list: Wishlist[] = Array.isArray(wlList) ? wlList : wlList?.wishlists ?? [];
-      setWishlists(list);
+      // Only fetch public wishlists if current user is following this user
+      if (profileData.isFollowingByCurrentUser) {
+        const wlList = await apiGet('/api/wishlists?userId=' + profileData.id);
+        const list: Wishlist[] = Array.isArray(wlList) ? wlList : wlList?.wishlists ?? [];
+        setWishlists(list);
+      } else {
+        setWishlists([]);
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to load profile';
       setError(message);
@@ -322,10 +326,15 @@ export function UserProfileView() {
     try {
       if (wasFollowing) {
         await apiDelete('/api/follow', { followingId: profile.id });
+        setWishlists([]);
         toast({ title: 'Unfollowed', description: `You are no longer following @${profile.username}.` });
       } else {
         await apiPost('/api/follow', { followingId: profile.id });
         toast({ title: 'Following', description: `You are now following @${profile.username}.` });
+        // Fetch wishlists upon following
+        const wlList = await apiGet('/api/wishlists?userId=' + profile.id);
+        const list: Wishlist[] = Array.isArray(wlList) ? wlList : wlList?.wishlists ?? [];
+        setWishlists(list);
       }
     } catch (err) {
       // Revert on failure
@@ -469,20 +478,22 @@ export function UserProfileView() {
 
             <Separator className="mb-8" />
 
-            {/* Public Wishlists */}
+            {/* Public Wishlists (Followers Only) */}
             <section>
               <div className="mb-5 space-y-1">
                 <div className="flex items-center gap-2">
                   <h2 className="text-xl font-bold tracking-tight">
                     Public Wishlists
                   </h2>
-                  <Badge variant="secondary" className="gap-1">
-                    <List className="h-3 w-3" />
-                    {wishlists.length}
-                  </Badge>
+                  {profile.isFollowingByCurrentUser && (
+                    <Badge variant="secondary" className="gap-1">
+                      <List className="h-3 w-3" />
+                      {wishlists.length}
+                    </Badge>
+                  )}
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Wishlists @{profile.username} has shared publicly
+                  Wishlists @{profile.username} has shared with followers
                 </p>
               </div>
 
@@ -492,6 +503,27 @@ export function UserProfileView() {
                     <WishlistCardSkeleton key={i} />
                   ))}
                 </div>
+              ) : !profile.isFollowingByCurrentUser ? (
+                <Card className="border-2 border-dashed bg-gradient-to-br from-rose-50/50 via-background to-amber-50/50 dark:from-rose-950/20 dark:to-amber-950/20">
+                  <CardContent className="flex flex-col items-center justify-center gap-3 p-8 sm:p-10 text-center">
+                    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-rose-100 to-amber-100 dark:from-rose-900/60 dark:to-amber-900/60">
+                      <Lock className="h-7 w-7 text-rose-500" />
+                    </div>
+                    <div className="space-y-1">
+                      <h3 className="text-lg font-semibold">Wishlists are visible to followers only</h3>
+                      <p className="max-w-md text-sm text-muted-foreground">
+                        Follow @{profile.username} to see their public wishlists and discover what they&apos;re wishing for.
+                      </p>
+                    </div>
+                    <div className="mt-2">
+                      <FollowButton
+                        isFollowing={false}
+                        loading={followLoading}
+                        onToggle={handleFollowToggle}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
               ) : wishlists.length === 0 ? (
                 <Card className="border-dashed bg-white/40 dark:bg-card/30">
                   <CardContent className="flex flex-col items-center gap-3 p-8 text-center">

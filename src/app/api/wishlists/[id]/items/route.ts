@@ -33,9 +33,24 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       return NextResponse.json({ error: 'Wishlist not found' }, { status: 404 });
     }
 
-    // Check access: owner can always see, others only if public
-    if (!wishlist.isPublic && wishlist.userId !== userId) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    // Check access: owner can always see; others only if public AND following the owner
+    if (wishlist.userId !== userId) {
+      if (!wishlist.isPublic) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      }
+
+      const isFollower = await db.follow.findUnique({
+        where: {
+          followerId_followingId: {
+            followerId: userId,
+            followingId: wishlist.userId,
+          },
+        },
+      });
+
+      if (!isFollower) {
+        return NextResponse.json({ error: 'Wishlist is only visible to followers' }, { status: 403 });
+      }
     }
 
     const items = await db.wishlistItem.findMany({

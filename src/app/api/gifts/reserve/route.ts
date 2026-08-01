@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
     const item = await db.wishlistItem.findUnique({
       where: { id: wishlistItemId },
       include: {
-        wishlist: { select: { userId: true } },
+        wishlist: { select: { userId: true, isPublic: true } },
         reservations: {
           where: { userId },
           select: { id: true },
@@ -45,6 +45,24 @@ export async function POST(req: NextRequest) {
     // Cannot reserve your own item
     if (item.wishlist.userId === userId) {
       return NextResponse.json({ error: 'Cannot reserve your own item' }, { status: 400 });
+    }
+
+    // Must be public AND user must follow the wishlist owner to reserve
+    if (!item.wishlist.isPublic) {
+      return NextResponse.json({ error: 'Wishlist is private' }, { status: 403 });
+    }
+
+    const isFollower = await db.follow.findUnique({
+      where: {
+        followerId_followingId: {
+          followerId: userId,
+          followingId: item.wishlist.userId,
+        },
+      },
+    });
+
+    if (!isFollower) {
+      return NextResponse.json({ error: 'Wishlist is only accessible to followers' }, { status: 403 });
     }
 
     // Check if already reserved by this user

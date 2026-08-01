@@ -258,7 +258,7 @@ function WishlistFormDialog({
               </Label>
               <p className="text-xs text-muted-foreground">
                 {values.isPublic
-                  ? 'Anyone with the link can see this wishlist.'
+                  ? 'Only your followers can see this wishlist.'
                   : 'Only you can see this wishlist.'}
               </p>
             </div>
@@ -561,8 +561,8 @@ export function MyWishlistsView() {
       // Map _count.items → itemCount
       const list: Wishlist[] = raw.map((wl) => ({
         ...wl,
-        itemCount: (wl as Record<string, unknown>)._count
-          ? ((wl as Record<string, unknown>)._count as Record<string, number>).items
+        itemCount: (wl as unknown as Record<string, unknown>)._count
+          ? ((wl as unknown as Record<string, unknown>)._count as Record<string, number>).items
           : wl.itemCount ?? 0,
       }));
       setWishlists(list);

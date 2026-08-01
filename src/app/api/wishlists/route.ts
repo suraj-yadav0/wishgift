@@ -21,8 +21,23 @@ export async function GET(req: NextRequest) {
   const targetUserId = searchParams.get('userId');
 
   try {
-    // If userId query param is provided, return that user's public wishlists
+    // If userId query param is provided, return that user's public wishlists (only if current user is owner or follows target user)
     if (targetUserId) {
+      if (targetUserId !== userId) {
+        const isFollower = await db.follow.findUnique({
+          where: {
+            followerId_followingId: {
+              followerId: userId,
+              followingId: targetUserId,
+            },
+          },
+        });
+
+        if (!isFollower) {
+          return NextResponse.json([]);
+        }
+      }
+
       const wishlists = await db.wishlist.findMany({
         where: {
           userId: targetUserId,
