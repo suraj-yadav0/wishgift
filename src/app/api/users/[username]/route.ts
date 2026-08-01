@@ -22,14 +22,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ user
         createdAt: true,
         _count: {
           select: {
-            followers: true,
-            following: true,
+            followers: { where: { status: 'ACCEPTED' } },
+            following: { where: { status: 'ACCEPTED' } },
             wishlists: true,
           },
         },
         followers: {
           where: { followerId: userId },
-          select: { id: true },
+          select: { id: true, status: true },
         },
       },
     });
@@ -37,6 +37,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ user
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
+
+    const followRecord = user.followers[0];
+    const followStatus = followRecord ? followRecord.status : 'NONE';
 
     return NextResponse.json({
       id: user.id,
@@ -48,7 +51,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ user
       followerCount: user._count.followers,
       followingCount: user._count.following,
       wishlistCount: user._count.wishlists,
-      isFollowingByCurrentUser: user.followers.length > 0,
+      followStatus,
+      isFollowingByCurrentUser: followStatus === 'ACCEPTED',
     });
   } catch (error) {
     console.error('Error fetching user profile:', error);

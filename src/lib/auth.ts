@@ -8,7 +8,7 @@ export const authOptions: NextAuthOptions = {
     CredentialsProvider({
       name: "credentials",
       credentials: {
-        email: { label: "Email", type: "email" },
+        email: { label: "Email or Username", type: "text" },
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
@@ -16,8 +16,16 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
-        const user = await db.user.findUnique({
-          where: { email: credentials.email },
+        const loginInput = credentials.email.trim();
+
+        // Search user by email OR username
+        const user = await db.user.findFirst({
+          where: {
+            OR: [
+              { email: loginInput.toLowerCase() },
+              { username: loginInput },
+            ],
+          },
         });
 
         if (!user) {
@@ -49,7 +57,7 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         const dbUser = await db.user.findUnique({
-          where: { email: user.email! },
+          where: { id: user.id },
           select: { id: true, username: true, image: true, name: true },
         });
         if (dbUser) {

@@ -41,7 +41,7 @@ import { useToast } from '@/hooks/use-toast';
 /* ------------------------------------------------------------------ */
 
 const signInSchema = z.object({
-  email: z.string().min(1, 'Email is required').email('Invalid email address'),
+  email: z.string().min(1, 'Email or username is required'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
 });
 type SignInValues = z.infer<typeof signInSchema>;
@@ -479,12 +479,12 @@ export function LandingView() {
               className="space-y-4"
             >
               <div className="space-y-2">
-                <Label htmlFor="signin-email">Email</Label>
+                <Label htmlFor="signin-email">Email or Username</Label>
                 <Input
                   id="signin-email"
-                  type="email"
-                  placeholder="you@example.com"
-                  autoComplete="email"
+                  type="text"
+                  placeholder="you@example.com or @username"
+                  autoComplete="username"
                   disabled={signInForm.formState.isSubmitting}
                   {...signInForm.register('email')}
                 />

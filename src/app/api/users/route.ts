@@ -32,26 +32,31 @@ export async function GET(req: NextRequest) {
         bio: true,
         _count: {
           select: {
-            followers: true,
+            followers: { where: { status: 'ACCEPTED' } },
           },
         },
         followers: {
           where: { followerId: userId },
-          select: { id: true },
+          select: { id: true, status: true },
         },
       },
       take: 20,
     });
 
-    const results = users.map((user) => ({
-      id: user.id,
-      name: user.name,
-      username: user.username,
-      image: user.image,
-      bio: user.bio,
-      followerCount: user._count.followers,
-      isFollowingByCurrentUser: user.followers.length > 0,
-    }));
+    const results = users.map((user) => {
+      const followRecord = user.followers[0];
+      const followStatus = followRecord ? followRecord.status : 'NONE';
+      return {
+        id: user.id,
+        name: user.name,
+        username: user.username,
+        image: user.image,
+        bio: user.bio,
+        followerCount: user._count.followers,
+        followStatus,
+        isFollowingByCurrentUser: followStatus === 'ACCEPTED',
+      };
+    });
 
     return NextResponse.json(results);
   } catch (error) {

@@ -52,12 +52,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Wishlist is private' }, { status: 403 });
     }
 
-    const isFollower = await db.follow.findUnique({
+    const isFollower = await db.follow.findFirst({
       where: {
-        followerId_followingId: {
-          followerId: userId,
-          followingId: item.wishlist.userId,
-        },
+        followerId: userId,
+        followingId: item.wishlist.userId,
+        status: 'ACCEPTED',
       },
     });
 

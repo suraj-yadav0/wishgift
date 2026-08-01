@@ -33,6 +33,8 @@ import {
   Heart,
 } from 'lucide-react';
 
+import { FollowRequestsModal } from '@/components/app/follow-requests-modal';
+
 type ViewType = 'my-wishlists' | 'discover' | 'profile';
 
 interface NavItem {
@@ -130,6 +132,9 @@ export function AppShell({ children }: { children: ReactNode }) {
 
           {/* Right side */}
           <div className="flex items-center gap-3">
+            {/* Follow Requests Bell Icon */}
+            <FollowRequestsModal />
+
             {/* Desktop user menu */}
             <div className="hidden md:block">
               <DropdownMenu>

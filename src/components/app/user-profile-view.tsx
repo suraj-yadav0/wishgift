@@ -15,6 +15,7 @@ import {
   Loader2,
   Sparkles,
   Lock,
+  Clock,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -42,6 +43,7 @@ interface UserProfileData {
   followerCount: number;
   followingCount: number;
   wishlistCount: number;
+  followStatus?: 'NONE' | 'PENDING' | 'ACCEPTED';
   isFollowingByCurrentUser: boolean;
   createdAt: string;
 }
@@ -77,38 +79,59 @@ function getInitials(name: string): string {
 /* ------------------------------------------------------------------ */
 
 function FollowButton({
-  isFollowing,
+  followStatus = 'NONE',
   loading,
   onToggle,
 }: {
-  isFollowing: boolean;
+  followStatus?: 'NONE' | 'PENDING' | 'ACCEPTED';
   loading: boolean;
   onToggle: () => void;
 }) {
+  if (loading) {
+    return (
+      <Button disabled size="lg">
+        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        Loading...
+      </Button>
+    );
+  }
+
+  if (followStatus === 'ACCEPTED') {
+    return (
+      <Button
+        onClick={onToggle}
+        size="lg"
+        variant="outline"
+        className="border-rose-200 bg-white text-rose-600 hover:bg-rose-50 dark:border-rose-900 dark:bg-card dark:text-rose-400 dark:hover:bg-rose-950/40"
+      >
+        <UserMinus className="mr-2 h-4 w-4" />
+        Following
+      </Button>
+    );
+  }
+
+  if (followStatus === 'PENDING') {
+    return (
+      <Button
+        onClick={onToggle}
+        size="lg"
+        variant="outline"
+        className="border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300"
+      >
+        <Clock className="mr-2 h-4 w-4" />
+        Requested
+      </Button>
+    );
+  }
+
   return (
     <Button
       onClick={onToggle}
-      disabled={loading}
       size="lg"
-      className={
-        isFollowing
-          ? 'border-rose-200 bg-white text-rose-600 hover:bg-rose-50 dark:border-rose-900 dark:bg-card dark:text-rose-400 dark:hover:bg-rose-950/40'
-          : 'bg-gradient-to-r from-rose-500 to-orange-500 text-white hover:from-rose-600 hover:to-orange-600'
-      }
+      className="bg-gradient-to-r from-rose-500 to-orange-500 text-white hover:from-rose-600 hover:to-orange-600"
     >
-      {loading ? (
-        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-      ) : isFollowing ? (
-        <>
-          <UserMinus className="mr-2 h-4 w-4" />
-          Following
-        </>
-      ) : (
-        <>
-          <UserPlus className="mr-2 h-4 w-4" />
-          Follow
-        </>
-      )}
+      <UserPlus className="mr-2 h-4 w-4" />
+      Follow
     </Button>
   );
 }
@@ -304,51 +327,59 @@ export function UserProfileView() {
     fetchProfile();
   }, [fetchProfile]);
 
-  /* ---------------- Follow / Unfollow ---------------- */
+  /* ---------------- Follow / Unfollow / Cancel Request ---------------- */
   const handleFollowToggle = async () => {
     if (!profile) return;
-    const wasFollowing = profile.isFollowingByCurrentUser;
+    const currentStatus = profile.followStatus ?? (profile.isFollowingByCurrentUser ? 'ACCEPTED' : 'NONE');
     setFollowLoading(true);
 
-    // Optimistic update
-    setProfile((p) =>
-      p
-        ? {
-            ...p,
-            isFollowingByCurrentUser: !wasFollowing,
-            followerCount: wasFollowing
-              ? p.followerCount - 1
-              : p.followerCount + 1,
-          }
-        : null
-    );
-
     try {
-      if (wasFollowing) {
+      if (currentStatus === 'ACCEPTED') {
+        // Unfollow
         await apiDelete('/api/follow', { followingId: profile.id });
         setWishlists([]);
+        setProfile((p) =>
+          p
+            ? {
+                ...p,
+                followStatus: 'NONE',
+                isFollowingByCurrentUser: false,
+                followerCount: Math.max(0, p.followerCount - 1),
+              }
+            : null
+        );
         toast({ title: 'Unfollowed', description: `You are no longer following @${profile.username}.` });
+      } else if (currentStatus === 'PENDING') {
+        // Cancel follow request
+        await apiDelete('/api/follow', { followingId: profile.id });
+        setProfile((p) =>
+          p
+            ? {
+                ...p,
+                followStatus: 'NONE',
+                isFollowingByCurrentUser: false,
+              }
+            : null
+        );
+        toast({ title: 'Request cancelled', description: `Cancelled follow request to @${profile.username}.` });
       } else {
+        // Send follow request
         await apiPost('/api/follow', { followingId: profile.id });
-        toast({ title: 'Following', description: `You are now following @${profile.username}.` });
-        // Fetch wishlists upon following
-        const wlList = await apiGet('/api/wishlists?userId=' + profile.id);
-        const list: Wishlist[] = Array.isArray(wlList) ? wlList : wlList?.wishlists ?? [];
-        setWishlists(list);
+        setProfile((p) =>
+          p
+            ? {
+                ...p,
+                followStatus: 'PENDING',
+                isFollowingByCurrentUser: false,
+              }
+            : null
+        );
+        toast({
+          title: 'Follow request sent',
+          description: `Wait for @${profile.username} to accept your request.`,
+        });
       }
     } catch (err) {
-      // Revert on failure
-      setProfile((p) =>
-        p
-          ? {
-              ...p,
-              isFollowingByCurrentUser: wasFollowing,
-              followerCount: wasFollowing
-                ? p.followerCount + 1
-                : p.followerCount - 1,
-            }
-          : null
-      );
       const message = err instanceof Error ? err.message : 'Something went wrong';
       toast({ title: 'Could not update follow status', description: message, variant: 'destructive' });
     } finally {
@@ -465,7 +496,7 @@ export function UserProfileView() {
                       {/* Follow Button */}
                       <div className="mt-5 flex justify-center sm:justify-start">
                         <FollowButton
-                          isFollowing={profile.isFollowingByCurrentUser}
+                          followStatus={profile.followStatus ?? (profile.isFollowingByCurrentUser ? 'ACCEPTED' : 'NONE')}
                           loading={followLoading}
                           onToggle={handleFollowToggle}
                         />
@@ -507,17 +538,27 @@ export function UserProfileView() {
                 <Card className="border-2 border-dashed bg-gradient-to-br from-rose-50/50 via-background to-amber-50/50 dark:from-rose-950/20 dark:to-amber-950/20">
                   <CardContent className="flex flex-col items-center justify-center gap-3 p-8 sm:p-10 text-center">
                     <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-rose-100 to-amber-100 dark:from-rose-900/60 dark:to-amber-900/60">
-                      <Lock className="h-7 w-7 text-rose-500" />
+                      {profile.followStatus === 'PENDING' ? (
+                        <Clock className="h-7 w-7 text-amber-500" />
+                      ) : (
+                        <Lock className="h-7 w-7 text-rose-500" />
+                      )}
                     </div>
                     <div className="space-y-1">
-                      <h3 className="text-lg font-semibold">Wishlists are visible to followers only</h3>
+                      <h3 className="text-lg font-semibold">
+                        {profile.followStatus === 'PENDING'
+                          ? 'Follow Request Sent'
+                          : 'Wishlists are visible to followers only'}
+                      </h3>
                       <p className="max-w-md text-sm text-muted-foreground">
-                        Follow @{profile.username} to see their public wishlists and discover what they&apos;re wishing for.
+                        {profile.followStatus === 'PENDING'
+                          ? `Waiting for @${profile.username} to accept your follow request to unlock their public wishlists.`
+                          : `Send a follow request to @${profile.username} to view their public wishlists once accepted.`}
                       </p>
                     </div>
                     <div className="mt-2">
                       <FollowButton
-                        isFollowing={false}
+                        followStatus={profile.followStatus ?? 'NONE'}
                         loading={followLoading}
                         onToggle={handleFollowToggle}
                       />

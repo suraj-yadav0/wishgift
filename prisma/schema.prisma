@@ -78,6 +78,7 @@ model GiftReservation {
 
 model Follow {
   id          String   @id @default(cuid())
+  status      String   @default("PENDING")
   createdAt   DateTime @default(now())
 
   followerId  String

@@ -16,6 +16,7 @@ import {
   Package,
   Loader2,
   Calendar,
+  Clock,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -58,6 +59,7 @@ interface SearchUser {
   image: string | null;
   bio: string | null;
   followerCount: number;
+  followStatus?: 'NONE' | 'PENDING' | 'ACCEPTED';
   isFollowingByCurrentUser: boolean;
 }
 
@@ -139,39 +141,46 @@ function initials(name: string | null): string {
 
 interface FollowButtonProps {
   userId: string;
+  followStatus?: 'NONE' | 'PENDING' | 'ACCEPTED';
   isFollowing: boolean;
-  onToggle: (userId: string, next: boolean) => void;
+  onToggle: (userId: string, nextStatus: 'NONE' | 'PENDING' | 'ACCEPTED') => void;
   size?: 'sm' | 'default';
 }
 
-function FollowButton({ userId, isFollowing, onToggle, size = 'sm' }: FollowButtonProps) {
+function FollowButton({ userId, followStatus = 'NONE', isFollowing, onToggle, size = 'sm' }: FollowButtonProps) {
   const [pending, setPending] = useState(false);
   const { toast } = useToast();
+  const status = followStatus ?? (isFollowing ? 'ACCEPTED' : 'NONE');
 
   const handleClick = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (pending) return;
     setPending(true);
-    const previous = isFollowing;
-    // Optimistic update
-    onToggle(userId, !isFollowing);
+
     try {
-      if (!isFollowing) {
-        await apiPost('/api/follow', { followingId: userId });
-        toast({
-          title: 'Following',
-          description: 'You will now see their wishlists in your feed.',
-        });
-      } else {
+      if (status === 'ACCEPTED') {
         await apiDelete('/api/follow', { followingId: userId });
+        onToggle(userId, 'NONE');
         toast({
           title: 'Unfollowed',
           description: 'Their wishlists will no longer appear in your feed.',
         });
+      } else if (status === 'PENDING') {
+        await apiDelete('/api/follow', { followingId: userId });
+        onToggle(userId, 'NONE');
+        toast({
+          title: 'Request cancelled',
+          description: 'Follow request has been cancelled.',
+        });
+      } else {
+        await apiPost('/api/follow', { followingId: userId });
+        onToggle(userId, 'PENDING');
+        toast({
+          title: 'Follow request sent',
+          description: 'They will see your request and decide whether to accept.',
+        });
       }
     } catch (err) {
-      // Revert on failure
-      onToggle(userId, previous);
       const message = err instanceof Error ? err.message : 'Could not update follow status';
       toast({
         title: 'Something went wrong',
@@ -183,7 +192,7 @@ function FollowButton({ userId, isFollowing, onToggle, size = 'sm' }: FollowButt
     }
   };
 
-  if (isFollowing) {
+  if (status === 'ACCEPTED') {
     return (
       <Button
         type="button"
@@ -195,6 +204,22 @@ function FollowButton({ userId, isFollowing, onToggle, size = 'sm' }: FollowButt
       >
         {pending ? <Loader2 className="size-3.5 animate-spin" /> : <UserMinus className="size-3.5" />}
         Following
+      </Button>
+    );
+  }
+
+  if (status === 'PENDING') {
+    return (
+      <Button
+        type="button"
+        variant="outline"
+        size={size}
+        onClick={handleClick}
+        disabled={pending}
+        className="gap-1.5 border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300"
+      >
+        {pending ? <Loader2 className="size-3.5 animate-spin" /> : <Clock className="size-3.5" />}
+        Requested
       </Button>
     );
   }
@@ -219,7 +244,7 @@ function FollowButton({ userId, isFollowing, onToggle, size = 'sm' }: FollowButt
 
 interface UserSearchCardProps {
   user: SearchUser;
-  onFollowToggle: (userId: string, next: boolean) => void;
+  onFollowToggle: (userId: string, nextStatus: 'NONE' | 'PENDING' | 'ACCEPTED') => void;
   onOpenProfile: (username: string) => void;
 }
 
@@ -264,6 +289,7 @@ function UserSearchCard({ user, onFollowToggle, onOpenProfile }: UserSearchCardP
 
             <FollowButton
               userId={user.id}
+              followStatus={user.followStatus ?? (user.isFollowingByCurrentUser ? 'ACCEPTED' : 'NONE')}
               isFollowing={user.isFollowingByCurrentUser}
               onToggle={onFollowToggle}
             />
@@ -659,17 +685,21 @@ export function DiscoverView() {
     [navigate, setSelectedWishlistId],
   );
 
-  // Toggle follow state in both search results and following list (optimistic).
+  // Toggle follow state in both search results and following list.
   const handleFollowToggle = useCallback(
-    (userId: string, nextIsFollowing: boolean) => {
+    (userId: string, nextStatus: 'NONE' | 'PENDING' | 'ACCEPTED') => {
       // Update search results
       setSearchResults((prev) =>
         prev.map((u) =>
           u.id === userId
             ? {
                 ...u,
-                isFollowingByCurrentUser: nextIsFollowing,
-                followerCount: Math.max(0, u.followerCount + (nextIsFollowing ? 1 : -1)),
+                followStatus: nextStatus,
+                isFollowingByCurrentUser: nextStatus === 'ACCEPTED',
+                followerCount: Math.max(
+                  0,
+                  u.followerCount + (nextStatus === 'ACCEPTED' ? 1 : u.followStatus === 'ACCEPTED' ? -1 : 0)
+                ),
               }
             : u,
         ),
@@ -677,11 +707,9 @@ export function DiscoverView() {
 
       // Update following list
       setFollowing((prev) => {
-        if (nextIsFollowing) {
-          // Find user in search results to add to following list
+        if (nextStatus === 'ACCEPTED') {
           const found = searchResults.find((u) => u.id === userId);
-          if (!found) return prev;
-          if (prev.some((u) => u.id === userId)) return prev;
+          if (!found || prev.some((u) => u.id === userId)) return prev;
           return [
             {
               id: found.id,
@@ -697,7 +725,7 @@ export function DiscoverView() {
         }
       });
 
-      // After follow/unfollow changes, refresh feed + explore in background
+      // After follow changes, refresh feed + explore
       fetchFeed();
       fetchExplore();
     },

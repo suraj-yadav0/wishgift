@@ -39,12 +39,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
       }
 
-      const isFollower = await db.follow.findUnique({
+      const isFollower = await db.follow.findFirst({
         where: {
-          followerId_followingId: {
-            followerId: userId,
-            followingId: wishlist.userId,
-          },
+          followerId: userId,
+          followingId: wishlist.userId,
+          status: 'ACCEPTED',
         },
       });
 

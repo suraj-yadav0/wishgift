@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
   try {
     // Get IDs of users that the current user follows
     const following = await db.follow.findMany({
-      where: { followerId: userId },
+      where: { followerId: userId, status: 'ACCEPTED' },
       select: { followingId: true },
     });
 
