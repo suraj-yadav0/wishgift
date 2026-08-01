@@ -477,32 +477,39 @@ function WishlistCard({ wishlist, onOpen, onEdit, onDelete }: WishlistCardProps)
           </div>
         </div>
 
-        <CardHeader className="pb-2">
-          <CardTitle className="line-clamp-1 text-lg">{wishlist.name}</CardTitle>
-          <CardDescription className="line-clamp-2 min-h-[2.5rem]">
-            {wishlist.description || 'No description yet.'}
-          </CardDescription>
-        </CardHeader>
+        {/* Content & Metadata */}
+        <div className="flex flex-col p-4">
+          <div className="mb-3 space-y-1">
+            <h3 className="line-clamp-1 text-base font-bold tracking-tight text-foreground transition-colors group-hover:text-rose-600">
+              {wishlist.name}
+            </h3>
+            <p className="line-clamp-2 min-h-[2rem] text-xs leading-relaxed text-muted-foreground">
+              {wishlist.description || 'No description provided.'}
+            </p>
+          </div>
 
-        <CardContent className="flex flex-wrap items-center gap-2 pt-0">
-          {wishlist.occasion && (
-            <Badge
-              variant="outline"
-              className="gap-1 border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-300"
-            >
-              <Sparkles className="h-3 w-3" />
-              {wishlist.occasion}
-            </Badge>
-          )}
-          <Badge variant="secondary" className="gap-1">
-            <Package className="h-3 w-3" />
-            {wishlist.itemCount ?? 0} items
-          </Badge>
-          <span className="ml-auto flex items-center gap-1 text-xs text-muted-foreground">
-            <Calendar className="h-3 w-3" />
-            {formatDate(wishlist.createdAt)}
-          </span>
-        </CardContent>
+          <div className="mt-auto flex items-center justify-between gap-2 border-t border-border/50 pt-2.5 text-xs text-muted-foreground">
+            <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+              {wishlist.occasion && (
+                <Badge
+                  variant="outline"
+                  className="gap-1 border-rose-200 bg-rose-50/80 px-2 py-0.5 text-[11px] text-rose-700 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-300"
+                >
+                  <Sparkles className="h-3 w-3" />
+                  {wishlist.occasion}
+                </Badge>
+              )}
+              <Badge variant="secondary" className="gap-1 px-2 py-0.5 text-[11px]">
+                <Package className="h-3 w-3" />
+                {wishlist.itemCount ?? 0} {wishlist.itemCount === 1 ? 'item' : 'items'}
+              </Badge>
+            </div>
+            <span className="flex shrink-0 items-center gap-1 text-[11px]">
+              <Calendar className="h-3 w-3" />
+              {formatDate(wishlist.createdAt)}
+            </span>
+          </div>
+        </div>
       </Card>
     </motion.div>
   );

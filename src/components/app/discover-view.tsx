@@ -380,7 +380,8 @@ function FeedWishlistCard({ wishlist, onOpenProfile, onOpenWishlist }: FeedWishl
           </div>
         </div>
 
-        <CardHeader className="pb-2">
+        {/* Content & Metadata */}
+        <div className="flex flex-col p-4">
           {/* Owner */}
           <button
             type="button"
@@ -388,9 +389,9 @@ function FeedWishlistCard({ wishlist, onOpenProfile, onOpenWishlist }: FeedWishl
               e.stopPropagation();
               onOpenProfile(owner.username);
             }}
-            className="mb-2 flex w-fit items-center gap-2 rounded-full pr-2 transition-colors hover:bg-rose-50"
+            className="mb-2 flex w-fit items-center gap-2 rounded-full pr-2 transition-colors hover:bg-rose-50 dark:hover:bg-rose-950/40"
           >
-            <Avatar className="size-6 ring-1 ring-rose-100">
+            <Avatar className="size-6 ring-1 ring-rose-100 dark:ring-rose-900">
               {owner.image ? (
                 <AvatarImage src={owner.image} alt={owner.name} />
               ) : null}
@@ -398,41 +399,39 @@ function FeedWishlistCard({ wishlist, onOpenProfile, onOpenWishlist }: FeedWishl
                 {initials(owner.name)}
               </AvatarFallback>
             </Avatar>
-            <span className="text-xs font-medium text-muted-foreground hover:text-rose-700">
+            <span className="text-xs font-medium text-muted-foreground hover:text-rose-700 dark:hover:text-rose-300">
               {owner.name}
             </span>
           </button>
 
-          <CardTitle className="text-base leading-snug text-foreground line-clamp-1">
-            {wishlist.name}
-          </CardTitle>
-          {wishlist.description ? (
-            <CardDescription className="line-clamp-2">
-              {wishlist.description}
-            </CardDescription>
-          ) : null}
-        </CardHeader>
+          <div className="mb-3 space-y-1">
+            <h3 className="line-clamp-1 text-base font-bold tracking-tight text-foreground transition-colors group-hover:text-rose-600">
+              {wishlist.name}
+            </h3>
+            <p className="line-clamp-2 min-h-[2rem] text-xs leading-relaxed text-muted-foreground">
+              {wishlist.description || 'No description provided.'}
+            </p>
+          </div>
 
-        <CardContent className="pt-0">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex flex-wrap items-center gap-1.5">
+          <div className="mt-auto flex items-center justify-between gap-2 border-t border-border/50 pt-2.5 text-xs text-muted-foreground">
+            <div className="flex min-w-0 flex-wrap items-center gap-1.5">
               {wishlist.occasion ? (
-                <Badge variant="secondary" className="gap-1 bg-rose-50 text-rose-700">
+                <Badge variant="secondary" className="gap-1 bg-rose-50 px-2 py-0.5 text-[11px] text-rose-700 dark:bg-rose-950/40 dark:text-rose-300">
                   <Sparkles className="size-3" />
                   {wishlist.occasion}
                 </Badge>
               ) : null}
-              <Badge variant="outline" className="gap-1 text-emerald-700">
+              <Badge variant="outline" className="gap-1 px-2 py-0.5 text-[11px] text-emerald-700 dark:text-emerald-400">
                 <Globe className="size-3" />
                 Public
               </Badge>
             </div>
-            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+            <span className="flex shrink-0 items-center gap-1 text-[11px]">
               <Calendar className="size-3" />
               {formatRelative(wishlist.updatedAt)}
             </span>
           </div>
-        </CardContent>
+        </div>
       </Card>
     </motion.div>
   );
