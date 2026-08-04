@@ -60,6 +60,7 @@ CREATE TABLE IF NOT EXISTS "GiftReservation" (
 -- CreateTable
 CREATE TABLE IF NOT EXISTS "Follow" (
     "id" TEXT NOT NULL PRIMARY KEY,
+    "status" TEXT NOT NULL DEFAULT 'PENDING',
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "followerId" TEXT NOT NULL,
     "followingId" TEXT NOT NULL,
