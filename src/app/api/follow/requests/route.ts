@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { z } from 'zod';
+import { getAuthenticatedUserId } from '@/lib/auth-utils';
 
 const respondRequestSchema = z.object({
   requesterId: z.string().min(1, 'requesterId is required'),
@@ -9,7 +10,7 @@ const respondRequestSchema = z.object({
 
 // GET /api/follow/requests - Get incoming pending follow requests for authenticated user
 export async function GET(req: NextRequest) {
-  const userId = req.headers.get('x-user-id');
+  const userId = await getAuthenticatedUserId();
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -50,7 +51,7 @@ export async function GET(req: NextRequest) {
 
 // POST /api/follow/requests - Accept or Reject an incoming follow request
 export async function POST(req: NextRequest) {
-  const userId = req.headers.get('x-user-id');
+  const userId = await getAuthenticatedUserId();
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }

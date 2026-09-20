@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { z } from 'zod';
+import { getAuthenticatedUserId } from '@/lib/auth-utils';
 
 const updateWishlistSchema = z.object({
   name: z.string().min(1).optional(),
@@ -12,7 +13,7 @@ const updateWishlistSchema = z.object({
 
 // GET /api/wishlists/[id] - Get single wishlist with items
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const userId = req.headers.get('x-user-id');
+  const userId = await getAuthenticatedUserId();
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -85,7 +86,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
 // PUT /api/wishlists/[id] - Update wishlist (only owner)
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const userId = req.headers.get('x-user-id');
+  const userId = await getAuthenticatedUserId();
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -129,7 +130,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
 // DELETE /api/wishlists/[id] - Delete wishlist (only owner, cascades)
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const userId = req.headers.get('x-user-id');
+  const userId = await getAuthenticatedUserId();
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }

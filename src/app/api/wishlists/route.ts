@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { z } from 'zod';
+import { getAuthenticatedUserId } from '@/lib/auth-utils';
 
 const createWishlistSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -12,7 +13,7 @@ const createWishlistSchema = z.object({
 
 // GET /api/wishlists - Get all wishlists for authenticated user (or another user's public wishlists)
 export async function GET(req: NextRequest) {
-  const userId = req.headers.get('x-user-id');
+  const userId = await getAuthenticatedUserId();
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -78,7 +79,7 @@ export async function GET(req: NextRequest) {
 
 // POST /api/wishlists - Create a new wishlist
 export async function POST(req: NextRequest) {
-  const userId = req.headers.get('x-user-id');
+  const userId = await getAuthenticatedUserId();
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }

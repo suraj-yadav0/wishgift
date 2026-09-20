@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { z } from 'zod';
+import { getAuthenticatedUserId } from '@/lib/auth-utils';
 
 const followSchema = z.object({
   followingId: z.string().min(1, 'followingId is required'),
@@ -8,7 +9,7 @@ const followSchema = z.object({
 
 // POST /api/follow - Send follow request (creates record with status PENDING)
 export async function POST(req: NextRequest) {
-  const userId = req.headers.get('x-user-id');
+  const userId = await getAuthenticatedUserId();
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -81,7 +82,7 @@ export async function POST(req: NextRequest) {
 
 // DELETE /api/follow - Unfollow or cancel follow request
 export async function DELETE(req: NextRequest) {
-  const userId = req.headers.get('x-user-id');
+  const userId = await getAuthenticatedUserId();
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -118,7 +119,7 @@ export async function DELETE(req: NextRequest) {
 
 // GET /api/follow - Get list of users that current user is actively following (ACCEPTED)
 export async function GET(req: NextRequest) {
-  const userId = req.headers.get('x-user-id');
+  const userId = await getAuthenticatedUserId();
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }

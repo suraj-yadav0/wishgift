@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { getAuthenticatedUserId } from '@/lib/auth-utils';
 
 // GET /api/users/[username] - Get user profile by username
 export async function GET(req: NextRequest, { params }: { params: Promise<{ username: string }> }) {
-  const userId = req.headers.get('x-user-id');
+  const userId = await getAuthenticatedUserId();
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
