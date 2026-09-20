@@ -8,7 +8,7 @@ WishGift is a full-stack web application for creating, managing, and sharing wis
 
 [![WishGift Launch Preview](brag-output/brag.gif)](brag-output/brag.mp4)
 
-*Autoplaying launch preview. Click the preview above to view the full 1080p video with audio ([`brag-output/brag.mp4`](brag-output/brag.mp4)).*
+
 
 ---
 
