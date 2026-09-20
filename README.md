@@ -1,23 +1,55 @@
 # WishGift
 
-WishGift is a full-stack web application for creating, managing, and sharing wishlists. Users can curate gift ideas, reserve items on wishlists, send and manage follow requests, and view public lists shared by accepted followers.
+WishGift is a full-stack web application for creating, managing, and sharing wishlists. Users can curate gift ideas, coordinate reservations in secret to prevent duplicate gifting, manage follower permissions, and share lists securely.
 
 ---
 
-## System Architecture
+## Launch Preview
 
-WishGift follows a modular, serverless-ready architecture built on Next.js 16 (App Router), Prisma ORM, and modern web standards.
+<video src="brag-output/brag.mp4" poster="brag-output/brag.jpg" controls width="100%"></video>
+
+[![WishGift Launch Video](brag-output/brag.jpg)](brag-output/brag.mp4)
+
+*Click the image or player above to watch the 18-second product overview video ([`brag-output/brag.mp4`](brag-output/brag.mp4)).*
+
+---
+
+## Key Features
+
+- **Wishlist Management**: Create and organize custom wishlists by occasion (birthdays, holidays, weddings) with customizable visibility.
+- **Gift Item Curation**: Add items with images, multi-currency pricing, priority levels (High, Medium, Low), and direct merchant links.
+- **Secret Reservations**: Friends can reserve items on public wishlists. The reservation is visible to other friends to prevent duplicate gifts, while remaining hidden from the recipient.
+- **Privacy and Follower Controls**: Two-step follow approval workflow (`PENDING` -> `ACCEPTED` / `REJECTED`). Only accepted followers can view public wishlists.
+- **Flexible Authentication**: Sign in using either an email address or username, powered by NextAuth.js and bcrypt password hashing.
+
+---
+
+## Tech Stack
+
+| Layer | Technologies |
+| :--- | :--- |
+| **Framework** | Next.js 16 (App Router), React 19, TypeScript |
+| **Styling** | Tailwind CSS v4, tw-animate-css |
+| **UI Components** | Radix UI primitives, Lucide Icons, Framer Motion |
+| **State & Data** | Zustand, TanStack React Query |
+| **Authentication** | NextAuth.js (JWT credentials strategy, bcryptjs) |
+| **Database & ORM** | SQLite (local) / Turso LibSQL (production), Prisma ORM |
+| **Validation** | Zod, React Hook Form |
+
+---
+
+## Architecture Overview
 
 ```text
 [ Client Browser ]
        │
        ▼
-[ Next.js 16 Frontend (React 19, Tailwind CSS v4, Zustand) ]
+[ Next.js 16 App Router (React 19, Tailwind CSS v4, Zustand) ]
        │
        ▼
-[ Next.js API Routes (zod validation & authorization checks) ]
+[ Next.js API Routes (Zod Validation & Authorization Checks) ]
        │
-       ├── NextAuth.js (JWT Credentials Provider: Email or Username login)
+       ├── NextAuth.js (JWT Session Strategy: Email or Username)
        │
        ▼
 [ Data Access Layer (Prisma ORM & LibSQL Client) ]
@@ -26,210 +58,160 @@ WishGift follows a modular, serverless-ready architecture built on Next.js 16 (A
 [ SQLite / Turso LibSQL Database ]
 ```
 
-### Key Architectural Modules
+### Core Workflows
 
-1. **Authentication & Session Management**:
-   - Managed via NextAuth.js with JWT session strategy.
-   - Supports user authentication using either Email Address or Username.
-   - Password hashes are stored securely using `bcryptjs`.
-
-2. **Follow Request Workflow & Privacy Model**:
-   - Follow relationships operate on a two-step approval process (`PENDING` -> `ACCEPTED` / `REJECTED`).
-   - Clicking "Follow" submits a pending request. The recipient receives an in-app notification and can accept or reject the request.
-   - Access to public wishlists is strictly restricted to accepted followers (`status: "ACCEPTED"`).
-
-3. **Wishlist & Gift Reservation System**:
-   - Users can mark wishlists as Public (visible to accepted followers) or Private (owner only).
-   - Friends can reserve items on wishlists (publicly or anonymously) to avoid duplicate gifting.
-
-4. **Database & ORM**:
-   - Uses Prisma ORM connected to SQLite locally or Turso LibSQL in production.
+1. **Authentication**: Users authenticate via email or username. Passwords are encrypted with `bcryptjs`, and sessions are maintained using JWTs.
+2. **Follow System**: Following requires recipient approval. Once accepted, followers gain access to the user's public wishlists.
+3. **Gift Reservations**: When an accepted follower reserves an item, the reservation status is recorded to notify other followers while keeping the recipient in surprise.
 
 ---
 
-## Features
+## Getting Started
 
-- **Wishlist Management**: Create, edit, and organize wishlists with optional occasions and privacy settings.
-- **Gift Item Management**: Add items with images, multi-currency prices, priorities, and store links.
-- **Follow Request System**: Send follow requests, manage incoming requests (Accept/Reject), and track follower status.
-- **Follower-Only Visibility**: Restrict public wishlist access exclusively to approved followers.
-- **Gift Reservations**: Reserve gift items on wishlists to coordinate gift giving without duplicates.
-- **Flexible Sign-In**: Log in using either your email address or username.
+### Prerequisites
 
----
+- Node.js 18.x, 20.x, or newer
+- npm 9.x or newer
 
-## Tech Stack
+### Installation
 
-- **Framework**: Next.js 16 (App Router)
-- **UI Library**: React 19, Tailwind CSS v4, Radix UI, Framer Motion, Lucide Icons
-- **State Management**: Zustand, TanStack React Query
-- **Authentication**: NextAuth.js (`bcryptjs`)
-- **Database & ORM**: SQLite / Turso LibSQL, Prisma ORM
-- **Validation**: Zod
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/your-username/wishgift.git
+   cd wishgift
+   ```
 
----
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
 
-## Prerequisites
+3. Configure environment variables:
+   ```bash
+   cp .env.example .env
+   ```
+   Ensure `.env` contains the required settings:
+   ```env
+   DATABASE_URL="file:../db/custom.db"
+   NEXTAUTH_SECRET="your-development-secret-key"
+   NEXTAUTH_URL="http://localhost:3000"
+   ```
 
-Before starting, ensure you have the following installed on your machine:
+4. Initialize the database:
+   ```bash
+   # Generate Prisma Client types
+   npm run db:generate
 
-- **Node.js**: Version 18.x, 20.x, or higher
-- **npm**: Version 9.x or higher
+   # Push schema to local SQLite database
+   npm run db:push
 
----
+   # Apply column migrations
+   node scripts/migrate-all-dbs.mjs
+   ```
 
-## Development Environment Setup
-
-Follow these steps to set up and run WishGift on your local machine.
-
-### 1. Clone the Repository
-
-```bash
-git clone https://github.com/your-username/wishgift.git
-cd wishgift
-```
-
-### 2. Install Dependencies
-
-Install project dependencies using npm:
-
-```bash
-npm install
-```
-
-### 3. Configure Environment Variables
-
-Create a `.env` file in the root directory by copying the example template:
-
-```bash
-cp .env.example .env
-```
-
-Open `.env` and configure the following variables:
-
-```env
-DATABASE_URL="file:../db/custom.db"
-NEXTAUTH_SECRET="your-development-secret-key"
-NEXTAUTH_URL="http://localhost:3000"
-```
-
-### 4. Initialize Database & Run Migrations
-
-Generate the Prisma client types and apply schema migrations to your local SQLite database:
-
-```bash
-# Generate Prisma Client types
-npm run db:generate
-
-# Push schema changes to SQLite database
-npm run db:push
-
-# Apply database column migrations (if using Turso or existing SQLite)
-node scripts/migrate-all-dbs.mjs
-```
-
-### 5. Start Development Server
-
-Run the local development server with hot reloading:
-
-```bash
-npm run dev
-```
-
-Open your browser and navigate to `http://localhost:3000`.
+5. Start the development server:
+   ```bash
+   npm run dev
+   ```
+   Open `http://localhost:3000` in your browser.
 
 ---
 
-## Production Build & Start
+## Production Build
 
-To build and test the application in production mode locally:
+To build and test the production application locally:
 
 ```bash
-# Step 1: Build production bundle
+# Build the production bundle
 npm run build
 
-# Step 2: Start production server
+# Start the production server
 npm run start
 ```
 
 ---
 
-## Project Directory Structure
+## Project Structure
 
 ```text
 wishgift/
+├── brag-output/                # Launch video, poster, and brief
+│   ├── brag.mp4                # 18-second launch brag video
+│   ├── brag.jpg                # Video poster frame
+│   ├── brag-plan.md            # Video storyboard and audio plan
+│   └── share-copy.txt          # Social media copy
 ├── db/                         # Local SQLite database files
 ├── prisma/                     # Prisma schema definitions
 │   └── schema.prisma
-├── public/                     # Static assets (images, icons)
-├── scripts/                    # Database migration & utility scripts
+├── public/                     # Static assets
+├── scripts/                    # Database migration and maintenance scripts
 │   └── migrate-all-dbs.mjs
 ├── src/
-│   ├── app/                    # Next.js App Router pages and API routes
-│   │   ├── api/                # REST API endpoints (auth, follow, wishlists, gifts)
+│   ├── app/                    # Next.js App Router routes and API endpoints
+│   │   ├── api/                # REST endpoints (auth, follow, wishlists, gifts)
 │   │   ├── layout.tsx          # Root layout with providers
-│   │   └── page.tsx            # Application entry page
-│   ├── components/             # UI components and view modules
-│   │   ├── app/                # Application views (UserProfileView, DiscoverView, etc.)
-│   │   └── ui/                 # Reusable UI primitives (Button, Card, Dialog, etc.)
+│   │   └── page.tsx            # Main app shell and routing
+│   ├── components/             # Reusable UI primitives and view modules
+│   │   ├── app/                # Feature views (Landing, Wishlists, Profile)
+│   │   └── ui/                 # Primitives (Button, Dialog, Card, etc.)
 │   ├── hooks/                  # Custom React hooks
-│   ├── lib/                    # API client, database connection, NextAuth options
-│   └── store/                  # Client-side state management (Zustand)
-├── .env.example                # Template for environment variables
-├── package.json                # Project manifest and scripts
-├── tailwind.config.ts          # Tailwind CSS configuration
-└── tsconfig.json               # TypeScript configuration
+│   ├── lib/                    # Utilities, Prisma client, NextAuth options
+│   └── store/                  # Zustand state stores
+├── package.json
+└── tsconfig.json
 ```
+
+---
+
+## API Reference
+
+| Method | Endpoint | Description | Access |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/api/auth/register` | Register a new user account | Public |
+| `POST` | `/api/auth/[...nextauth]` | Authenticate using email or username | Public |
+| `GET` | `/api/users` | Search users by name or username | Authenticated |
+| `GET` | `/api/users/[username]` | Retrieve user profile details | Authenticated |
+| `GET` | `/api/follow` | List users currently followed | Authenticated |
+| `POST` | `/api/follow` | Send a follow request (`PENDING`) | Authenticated |
+| `DELETE` | `/api/follow` | Cancel a follow request or unfollow | Authenticated |
+| `GET` | `/api/follow/requests` | List incoming pending follow requests | Authenticated |
+| `POST` | `/api/follow/requests` | Accept or reject a follow request | Authenticated |
+| `GET` | `/api/wishlists` | List wishlists accessible to the user | Authenticated |
+| `POST` | `/api/wishlists` | Create a new wishlist | Authenticated |
+| `GET` | `/api/wishlists/[id]` | Fetch wishlist details (follower restricted) | Authenticated |
+| `POST` | `/api/gifts/reserve` | Reserve an item on a public wishlist | Accepted Followers |
 
 ---
 
 ## Available Commands
 
-| Script | Command | Description |
-| :--- | :--- | :--- |
-| `npm run dev` | `next dev -p 3000` | Starts hot-reloading development server on port 3000 |
-| `npm run build` | `next build` | Compiles and builds production application |
-| `npm run start` | `next start` | Starts production server after `npm run build` |
-| `npm run lint` | `eslint .` | Runs static code analysis and linting checks |
-| `npm run db:generate` | `prisma generate` | Generates Prisma Client types from schema |
-| `npm run db:push` | `prisma db push` | Syncs Prisma schema changes to target database |
+| Command | Description |
+| :--- | :--- |
+| `npm run dev` | Start local development server on port 3000 |
+| `npm run build` | Generate Prisma client and compile Next.js production build |
+| `npm run start` | Start production server |
+| `npm run lint` | Run ESLint checks |
+| `npm run db:generate` | Generate Prisma Client types |
+| `npm run db:push` | Push schema changes directly to SQLite database |
+| `npm run db:migrate` | Run Prisma migrations for development |
+| `npm run db:reset` | Reset database and re-apply migrations |
 
 ---
 
-## API Overview
-
-| Method | Endpoint | Description | Access |
-| :--- | :--- | :--- | :--- |
-| `POST` | `/api/auth/register` | Register a new user account | Public |
-| `POST` | `/api/auth/[...nextauth]` | NextAuth sign-in (Email or Username) | Public |
-| `GET` | `/api/users` | Search users by name or username | Authenticated |
-| `GET` | `/api/users/[username]` | Fetch profile details for a given user | Authenticated |
-| `GET` | `/api/follow` | Fetch list of users actively followed | Authenticated |
-| `POST` | `/api/follow` | Send a follow request (`PENDING`) | Authenticated |
-| `DELETE` | `/api/follow` | Cancel follow request or unfollow user | Authenticated |
-| `GET` | `/api/follow/requests` | List incoming pending follow requests | Authenticated |
-| `POST` | `/api/follow/requests` | Accept or reject incoming follow request | Authenticated |
-| `GET` | `/api/wishlists` | List wishlists (filtered by follower access) | Authenticated |
-| `POST` | `/api/wishlists` | Create a new wishlist | Authenticated |
-| `GET` | `/api/wishlists/[id]` | Fetch single wishlist (follower restricted) | Authenticated |
-| `POST` | `/api/gifts/reserve` | Reserve an item on a public wishlist | Accepted Followers |
-
----
-
-## Deployment Guide
+## Deployment
 
 ### Deploying to Vercel
 
 1. Push your repository to GitHub.
-2. Import the repository into your Vercel dashboard.
-3. Configure Environment Variables in Vercel settings:
+2. Import the project into Vercel.
+3. Add the following Environment Variables in the Vercel project settings:
    - `DATABASE_URL`: Hosted LibSQL/Turso connection URL.
-   - `NEXTAUTH_SECRET`: Random secure string.
-   - `NEXTAUTH_URL`: Canonical site URL (e.g., `https://your-domain.vercel.app`).
-4. Click **Deploy**.
+   - `NEXTAUTH_SECRET`: Random secure secret key.
+   - `NEXTAUTH_URL`: Canonical production URL (e.g., `https://your-domain.vercel.app`).
+4. Trigger the deployment.
 
 ---
 
 ## License
 
-This project is open-source and available under the MIT License.
+This project is licensed under the MIT License.
