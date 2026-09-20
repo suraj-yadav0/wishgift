@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { z } from 'zod';
+import { getAuthenticatedUserId } from '@/lib/auth-utils';
 
 const unreserveSchema = z.object({
   wishlistItemId: z.string().min(1, 'wishlistItemId is required'),
@@ -8,7 +9,7 @@ const unreserveSchema = z.object({
 
 // POST /api/gifts/unreserve - Unreserve a gift
 export async function POST(req: NextRequest) {
-  const userId = req.headers.get('x-user-id');
+  const userId = await getAuthenticatedUserId();
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { z } from 'zod';
+import { getAuthenticatedUserId } from '@/lib/auth-utils';
 
 const reserveSchema = z.object({
   wishlistItemId: z.string().min(1, 'wishlistItemId is required'),
@@ -11,7 +12,7 @@ const reserveSchema = z.object({
 
 // POST /api/gifts/reserve - Reserve a gift item
 export async function POST(req: NextRequest) {
-  const userId = req.headers.get('x-user-id');
+  const userId = await getAuthenticatedUserId();
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -25,66 +26,79 @@ export async function POST(req: NextRequest) {
     }
 
     const { wishlistItemId, quantity, message, isAnonymous } = parsed.data;
+    const reserveQty = quantity ?? 1;
 
-    // Verify the item exists
-    const item = await db.wishlistItem.findUnique({
-      where: { id: wishlistItemId },
-      include: {
-        wishlist: { select: { userId: true, isPublic: true } },
-        reservations: {
-          where: { userId },
-          select: { id: true },
+    const result = await db.$transaction(async (tx) => {
+      // Verify the item exists
+      const item = await tx.wishlistItem.findUnique({
+        where: { id: wishlistItemId },
+        include: {
+          wishlist: { select: { userId: true, isPublic: true } },
+          reservations: true,
         },
-      },
-    });
+      });
 
-    if (!item) {
-      return NextResponse.json({ error: 'Item not found' }, { status: 404 });
-    }
+      if (!item) {
+        return { status: 404, error: 'Item not found' };
+      }
 
-    // Cannot reserve your own item
-    if (item.wishlist.userId === userId) {
-      return NextResponse.json({ error: 'Cannot reserve your own item' }, { status: 400 });
-    }
+      // Cannot reserve your own item
+      if (item.wishlist.userId === userId) {
+        return { status: 400, error: 'Cannot reserve your own item' };
+      }
 
-    // Must be public AND user must follow the wishlist owner to reserve
-    if (!item.wishlist.isPublic) {
-      return NextResponse.json({ error: 'Wishlist is private' }, { status: 403 });
-    }
+      // Must be public AND user must follow the wishlist owner to reserve
+      if (!item.wishlist.isPublic) {
+        return { status: 403, error: 'Wishlist is private' };
+      }
 
-    const isFollower = await db.follow.findFirst({
-      where: {
-        followerId: userId,
-        followingId: item.wishlist.userId,
-        status: 'ACCEPTED',
-      },
-    });
-
-    if (!isFollower) {
-      return NextResponse.json({ error: 'Wishlist is only accessible to followers' }, { status: 403 });
-    }
-
-    // Check if already reserved by this user
-    if (item.reservations.length > 0) {
-      return NextResponse.json({ error: 'Already reserved this item' }, { status: 409 });
-    }
-
-    const reservation = await db.giftReservation.create({
-      data: {
-        userId,
-        wishlistItemId,
-        quantity: quantity ?? 1,
-        message,
-        isAnonymous: isAnonymous ?? false,
-      },
-      include: {
-        user: {
-          select: { id: true, name: true, username: true, image: true },
+      const isFollower = await tx.follow.findFirst({
+        where: {
+          followerId: userId,
+          followingId: item.wishlist.userId,
+          status: 'ACCEPTED',
         },
-      },
+      });
+
+      if (!isFollower) {
+        return { status: 403, error: 'Wishlist is only accessible to followers' };
+      }
+
+      // Check if already reserved by this user
+      const userReservation = item.reservations.find((r) => r.userId === userId);
+      if (userReservation) {
+        return { status: 409, error: 'Already reserved this item' };
+      }
+
+      // Check total reserved quantity vs item quantity
+      const totalReserved = item.reservations.reduce((sum, r) => sum + r.quantity, 0);
+      if (totalReserved + reserveQty > item.quantity) {
+        return { status: 409, error: 'Item is already fully reserved' };
+      }
+
+      const reservation = await tx.giftReservation.create({
+        data: {
+          userId,
+          wishlistItemId,
+          quantity: reserveQty,
+          message,
+          isAnonymous: isAnonymous ?? false,
+        },
+        include: {
+          user: {
+            select: { id: true, name: true, username: true, image: true },
+          },
+        },
+      });
+
+      return { status: 201, data: reservation };
     });
 
-    return NextResponse.json(reservation, { status: 201 });
+    if (result.error) {
+      return NextResponse.json({ error: result.error }, { status: result.status });
+    }
+
+    return NextResponse.json(result.data, { status: 201 });
   } catch (error) {
     console.error('Error reserving gift:', error);
     return NextResponse.json({ error: 'Failed to reserve gift' }, { status: 500 });
