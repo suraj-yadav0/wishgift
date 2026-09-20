@@ -6,11 +6,11 @@ WishGift is a full-stack web application for creating, managing, and sharing wis
 
 ## Launch Preview
 
-<video src="brag-output/brag.mp4" poster="brag-output/brag.jpg" controls width="100%"></video>
+<video src="brag-output/brag.mp4" poster="brag-output/brag.jpg" autoplay muted loop playsinline width="100%">
+  <img src="brag-output/brag.gif" alt="WishGift Launch Preview" width="100%" />
+</video>
 
-[![WishGift Launch Video](brag-output/brag.jpg)](brag-output/brag.mp4)
-
-*Click the image or player above to watch the 18-second product overview video ([`brag-output/brag.mp4`](brag-output/brag.mp4)).*
+*Autoplaying preview above. Full 1080p video with audio available at [`brag-output/brag.mp4`](brag-output/brag.mp4).*
 
 ---
 
@@ -137,6 +137,7 @@ npm run start
 wishgift/
 ├── brag-output/                # Launch video, poster, and brief
 │   ├── brag.mp4                # 18-second launch brag video
+│   ├── brag.gif                # Autoplaying launch preview
 │   ├── brag.jpg                # Video poster frame
 │   ├── brag-plan.md            # Video storyboard and audio plan
 │   └── share-copy.txt          # Social media copy
