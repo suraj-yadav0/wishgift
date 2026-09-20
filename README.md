@@ -133,12 +133,9 @@ npm run start
 
 ```text
 wishgift/
-├── brag-output/                # Launch video, poster, and brief
+├── brag-output/                # Launch video and preview
 │   ├── brag.mp4                # 18-second launch brag video
-│   ├── brag.gif                # Autoplaying launch preview
-│   ├── brag.jpg                # Video poster frame
-│   ├── brag-plan.md            # Video storyboard and audio plan
-│   └── share-copy.txt          # Social media copy
+│   └── brag.gif                # Autoplaying launch preview
 ├── db/                         # Local SQLite database files
 ├── prisma/                     # Prisma schema definitions
 │   └── schema.prisma

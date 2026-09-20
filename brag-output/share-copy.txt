@@ -1,1 +1,0 @@
-Never receive an unwanted gift again: WishGift lets you curate wishlists and lets friends reserve items in secret. Built with Next.js 16 and Tailwind CSS v4.
