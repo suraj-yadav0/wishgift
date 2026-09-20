@@ -6,11 +6,9 @@ WishGift is a full-stack web application for creating, managing, and sharing wis
 
 ## Launch Preview
 
-<video src="brag-output/brag.mp4" poster="brag-output/brag.jpg" autoplay muted loop playsinline width="100%">
-  <img src="brag-output/brag.gif" alt="WishGift Launch Preview" width="100%" />
-</video>
+[![WishGift Launch Preview](brag-output/brag.gif)](brag-output/brag.mp4)
 
-*Autoplaying preview above. Full 1080p video with audio available at [`brag-output/brag.mp4`](brag-output/brag.mp4).*
+*Autoplaying launch preview. Click the preview above to view the full 1080p video with audio ([`brag-output/brag.mp4`](brag-output/brag.mp4)).*
 
 ---
 
