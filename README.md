@@ -10,8 +10,6 @@ WishGift is a full-stack web application for creating, managing, and sharing wis
 
 
 
----
-
 ## Key Features
 
 - **Wishlist Management**: Create and organize custom wishlists by occasion (birthdays, holidays, weddings) with customizable visibility.
