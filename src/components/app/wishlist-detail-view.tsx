@@ -26,6 +26,7 @@ import {
 import { apiGet, apiPost, apiPut, apiDelete } from '@/lib/api';
 import { useAppStore } from '@/store/use-app-store';
 import { useToast } from '@/hooks/use-toast';
+import { isSafeUrl } from '@/lib/utils';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -1117,12 +1118,12 @@ export function WishlistDetailView() {
                     <p className="text-base font-semibold">{detailItem.quantity}</p>
                   </div>
 
-                  {detailItem.productUrl && (
+                  {isSafeUrl(detailItem.productUrl) && (
                     <div className="rounded-lg border p-3.5 space-y-1">
-                      <span className="text-xs text-muted-foreground font-medium font-semibold">Product Link</span>
+                      <span className="text-xs text-muted-foreground font-semibold">Product Link</span>
                       <div>
                         <a
-                          href={detailItem.productUrl}
+                          href={detailItem.productUrl!}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="inline-flex items-center gap-1.5 text-sm font-semibold text-amber-600 hover:text-amber-700 dark:text-amber-400 hover:underline"
@@ -1424,9 +1425,9 @@ function ItemCard({
         </div>
 
         {/* Product URL */}
-        {item.productUrl && (
+        {isSafeUrl(item.productUrl) && (
           <a
-            href={item.productUrl}
+            href={item.productUrl!}
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}

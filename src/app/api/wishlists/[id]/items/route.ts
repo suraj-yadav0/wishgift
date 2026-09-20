@@ -1,14 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { z } from 'zod';
+import { getAuthenticatedUserId } from '@/lib/auth-utils';
+
+const safeUrlSchema = z
+  .string()
+  .url('Must be a valid URL')
+  .refine(
+    (val) => val.startsWith('http://') || val.startsWith('https://'),
+    'URL must start with http:// or https://'
+  );
 
 const createItemSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   description: z.string().nullable().optional(),
-  imageUrl: z.string().nullable().optional(),
+  imageUrl: safeUrlSchema.nullable().optional().or(z.literal('')),
   price: z.number().positive().optional().nullable(),
   currency: z.string().optional(),
-  productUrl: z.string().nullable().optional(),
+  productUrl: safeUrlSchema.nullable().optional().or(z.literal('')),
   priority: z.number().int().optional(),
   quantity: z.number().int().positive().optional(),
   isPurchased: z.boolean().optional(),
@@ -16,7 +25,7 @@ const createItemSchema = z.object({
 
 // GET /api/wishlists/[id]/items - Get all items for a wishlist
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const userId = req.headers.get('x-user-id');
+  const userId = await getAuthenticatedUserId();
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -83,7 +92,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
 // POST /api/wishlists/[id]/items - Add item to wishlist (only owner)
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const userId = req.headers.get('x-user-id');
+  const userId = await getAuthenticatedUserId();
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
